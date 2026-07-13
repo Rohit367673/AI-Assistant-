@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clinic Integration Sandbox - Mercer Health Clinic</title>
+  <style>
+    body {
+      font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #0b0f19;
+      color: #f3f4f6;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    header {
+      width: 100%;
+      background: rgba(17, 24, 39, 0.7);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 20px 0;
+      text-align: center;
+    }
+    .container {
+      max-width: 900px;
+      padding: 40px 20px;
+      text-align: center;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    h1 {
+      font-size: 2.5rem;
+      background: linear-gradient(135deg, #fff 30%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      color: #9ca3af;
+      font-size: 1.1rem;
+      margin-bottom: 40px;
+    }
+    .badge {
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      color: #818cf8;
+      padding: 4px 12px;
+      border-radius: 99px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: inline-block;
+      margin-bottom: 20px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+      margin-bottom: 40px;
+      text-align: left;
+    }
+    @media(min-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.3s ease;
+    }
+    .card:hover {
+      border-color: rgba(99, 102, 241, 0.3);
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .card h3 {
+      margin-top: 0;
+      color: #818cf8;
+      font-size: 1.3rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card p {
+      color: #9ca3af;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: #6366f1;
+      color: #ffffff;
+    }
+    .btn-primary:hover {
+      background: #4f46e5;
+    }
+    .btn-outline {
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #f3f4f6;
+    }
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    footer {
+      width: 100%;
+      text-align: center;
+      padding: 20px 0;
+      color: #4b5563;
+      font-size: 0.85rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h2>🩺 Mercer Wellness Clinic - External Website sandbox</h2>
+  </header>
+
+  <div class="container">
+    <span class="badge">Integration Sandbox</span>
+    <h1>Connect Your Existing Website</h1>
+    <p class="subtitle">
+      Demonstration of the two primary ways clinics (like Nephroconsultation) can connect their existing website to the custom AI assistant.
+    </p>
+
+    <div class="grid">
+      
+      {/* Card 1: Floating Launcher script */}
+      <div class="card">
+        <div>
+          <h3>💬 1. Inline Widget Bubble</h3>
+          <p>
+            Adds a floating icon launcher in the bottom right corner of your existing pages. Patients can expand it to consult, query rules, and book slots while browsing your content.
+          </p>
+        </div>
+        <div style="font-size: 0.8rem; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 10px; margin-bottom: 20px; font-family: monospace; color: #a78bfa;">
+          &lt;script src="http://localhost:5001/widget.js" data-clinic-id="mercer-clinic"&gt;&lt;/script&gt;
+        </div>
+        <button class="btn btn-outline" onclick="alert('See bottom right corner! The launcher bubble is already running on this sandbox page.')">
+          View Active Bubble
+        </button>
+      </div>
+
+      {/* Card 2: Standalone Full-Page Portal */}
+      <div class="card">
+        <div>
+          <h3>🏥 2. Full-Page Patient Hub</h3>
+          <p>
+            A standalone, beautifully branded patient portal. Offers sidebar navigation, fullscreen talking doctor chat, stepper booking grids, and <b>Lab Report PDF uploader</b> with AI analysis support.
+          </p>
+        </div>
+        <p style="font-size: 0.8rem; color: #6b7280; margin-bottom: 20px;">
+          Best for clinics that want to link a "Book Consultation" button from their main site to a dedicated patient experience page.
+        </p>
+        <a 
+          href="http://localhost:5173/assistant?clinicId=mercer-clinic" 
+          target="_blank" 
+          class="btn btn-primary"
+        >
+          Launch Standalone Portal &rarr;
+        </a>
+      </div>
+
+    </div>
+
+  </div>
+
+  <footer>
+    &copy; ClinicAI SaaS Integration Sandbox.
+  </footer>
+
+  <!-- Web widget injection -->
+  <script src="http://localhost:5001/widget.js" data-clinic-id="mercer-clinic"></script>
+
+</body>
+</html>

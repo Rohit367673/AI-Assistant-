@@ -1,0 +1,18 @@
+{
+  "name": "ai-doctor-saas",
+  "version": "1.0.0",
+  "description": "Multi-Tenant AI Healthcare Assistant SaaS",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "backend-install": "npm install --prefix backend",
+    "frontend-install": "npm install --prefix frontend --legacy-peer-deps",
+    "install-all": "npm run backend-install && npm run frontend-install",
+    "backend": "npm start --prefix backend",
+    "frontend": "npm run dev --prefix frontend",
+    "dev": "npm run backend & npm run frontend"
+  }
+}
