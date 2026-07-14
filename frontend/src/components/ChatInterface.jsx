@@ -242,7 +242,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
           {/* Glowing ring behind avatar */}
           <div className={`absolute inset-0 rounded-full ${isSpeaking ? 'avatar-ring-talking' : 'avatar-ring-idle'}`} />
           <img 
-            src={gender === 'female' ? '/assets/doctor-female.jpg' : '/assets/doctor-male.jpg'} 
+            src={clinicSettings.logo || (gender === 'female' ? '/assets/doctor-female.jpg' : '/assets/doctor-male.jpg')} 
             alt="AI Doctor Avatar"
             className="w-full h-full object-cover rounded-full shadow-2xl ring-4 ring-white/20 relative z-10"
           />
@@ -299,7 +299,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
             className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-95 ${
               isListening
                 ? 'bg-red-500 ring-4 ring-red-100 animate-pulse text-white'
-                : 'bg-white text-indigo-600 hover:scale-105 ring-4 ring-white border border-gray-100'
+                : 'bg-white text-primary hover:scale-105 ring-4 ring-white border border-gray-100'
             }`}
           >
             <Mic className="w-5 h-5" />
@@ -321,7 +321,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
             <button
               key={idx}
               onClick={() => handleSendMessage(null, q)}
-              className="px-3 py-1.5 rounded-full bg-white text-indigo-600 text-[10px] font-semibold shadow-sm hover:shadow-md hover:scale-[1.02] transition-all border border-gray-100"
+              className="px-3 py-1.5 rounded-full bg-white text-primary text-[10px] font-semibold shadow-sm hover:shadow-md hover:scale-[1.02] transition-all border border-gray-100"
             >
               {q}
             </button>
@@ -345,7 +345,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                     <div 
                       className={`max-w-[85%] md:max-w-[70%] rounded-2xl px-4 py-3 text-sm shadow-sm transition-all ${
                         isUser 
-                          ? 'bg-indigo-600 text-white rounded-br-none border border-indigo-500' 
+                          ? 'bg-primary text-white rounded-br-none border border-primary' 
                           : 'bg-white text-gray-800 border border-gray-100 rounded-bl-none shadow-md'
                       }`}
                     >
@@ -362,25 +362,25 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                                 <button
                                   key={pIdx}
                                   onClick={() => handleSelectPlan(plan.name)}
-                                  className="p-4 bg-white hover:bg-indigo-50 border border-gray-200 hover:border-indigo-400 rounded-xl text-left transition-all active:scale-[0.98] group shadow-sm"
+                                  className="p-4 bg-white hover:bg-gray-50 border border-gray-200 hover:border-primary rounded-xl text-left transition-all active:scale-[0.98] group shadow-sm"
                                 >
                                   <div className="flex justify-between items-start mb-2">
                                     <div>
-                                      <h5 className="text-sm font-bold text-gray-800 group-hover:text-indigo-900">{plan.name}</h5>
-                                      <span className="text-[10px] text-gray-500 group-hover:text-indigo-700">{plan.duration || 45} min</span>
+                                      <h5 className="text-sm font-bold text-gray-800 group-hover:text-primary">{plan.name}</h5>
+                                      <span className="text-[10px] text-gray-500">{plan.duration || 45} min</span>
                                     </div>
-                                    <span className="text-sm font-extrabold text-indigo-500 group-hover:text-indigo-700 flex items-center gap-1">
+                                    <span className="text-sm font-extrabold text-primary flex items-center gap-1">
                                       ₹{plan.fee || plan.price}
-                                      <span className="text-[9px] font-normal text-gray-400 group-hover:text-indigo-400">INR</span>
+                                      <span className="text-[9px] font-normal text-gray-400">INR</span>
                                     </span>
                                   </div>
                                   {plan.description && (
-                                    <p className="text-[11px] text-gray-600 group-hover:text-indigo-800 mb-2">{plan.description}</p>
+                                    <p className="text-[11px] text-gray-600 mb-2">{plan.description}</p>
                                   )}
                                   {plan.benefits && plan.benefits.length > 0 && (
                                     <div className="grid grid-cols-2 gap-x-2 gap-y-1">
                                       {plan.benefits.map((b, bi) => (
-                                        <span key={bi} className="text-[10px] text-gray-500 group-hover:text-indigo-700 flex items-center gap-1">
+                                        <span key={bi} className="text-[10px] text-gray-500 flex items-center gap-1">
                                           <span className="text-green-400 text-[8px]">✓</span> {b}
                                         </span>
                                       ))}
@@ -398,10 +398,10 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                                 <button
                                   key={dIdx}
                                   onClick={() => handleSelectDate(day.dateStr)}
-                                  className="flex-shrink-0 flex flex-col items-center bg-white border border-gray-200 px-3 py-2 rounded-xl text-center min-w-[54px] hover:bg-indigo-50 hover:border-indigo-300 transition-all active:scale-95 shadow-sm group"
+                                  className="flex-shrink-0 flex flex-col items-center bg-white border border-gray-200 px-3 py-2 rounded-xl text-center min-w-[54px] hover:bg-gray-50 hover:border-primary transition-all active:scale-95 shadow-sm group"
                                 >
-                                  <span className="text-[9px] text-gray-500 uppercase font-medium group-hover:text-indigo-600">{day.dayName}</span>
-                                  <span className="text-sm font-extrabold text-gray-800 group-hover:text-indigo-700">{day.dayNum}</span>
+                                  <span className="text-[9px] text-gray-500 uppercase font-medium group-hover:text-primary">{day.dayName}</span>
+                                  <span className="text-sm font-extrabold text-gray-800 group-hover:text-primary">{day.dayNum}</span>
                                 </button>
                               ))}
                             </div>
@@ -414,7 +414,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                                 <button
                                   key={sIdx}
                                   onClick={() => handleSelectSlot(slot)}
-                                  className="py-2 text-center text-xs font-bold bg-white hover:bg-indigo-50 border border-gray-200 hover:border-indigo-300 rounded-lg text-gray-700 hover:text-indigo-700 transition-all active:scale-95 shadow-sm"
+                                  className="py-2 text-center text-xs font-bold bg-white hover:bg-gray-50 border border-gray-200 hover:border-primary rounded-lg text-gray-700 hover:text-primary transition-all active:scale-95 shadow-sm"
                                 >
                                   {slot}
                                 </button>
@@ -424,7 +424,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
 
                           {/* 4. Drag-and-drop document upload block */}
                           {msg.action.type === 'upload_document' && (
-                            <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:border-indigo-300 transition-all relative bg-gray-50 flex flex-col items-center gap-2">
+                            <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:border-primary transition-all relative bg-gray-50 flex flex-col items-center gap-2">
                               <input 
                                 type="file" 
                                 accept=".pdf,.docx,.txt" 
@@ -433,7 +433,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
                               />
                               <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm border border-gray-200">
-                                {uploadingDoc ? <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" /> : <Upload className="w-5 h-5 text-indigo-500" />}
+                                {uploadingDoc ? <Loader2 className="w-5 h-5 text-primary animate-spin" /> : <Upload className="w-5 h-5 text-primary" />}
                               </div>
                               <span className="text-xs font-bold text-gray-700">Click to Upload Medical Reports</span>
                               <span className="text-[9px] text-gray-500">PDF, DOCX, TXT (Max 5MB)</span>
@@ -461,7 +461,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
 
                               <button
                                 onClick={handleConfirmPayment}
-                                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5"
+                                className="w-full py-2.5 bg-primary hover:opacity-90 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5"
                               >
                                 <CreditCard className="w-4 h-4" /> Confirm Payment & Book
                               </button>
@@ -498,9 +498,9 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
             {isTyping && (
               <div className="flex justify-start">
                 <div className="bg-white text-gray-800 border border-gray-100 rounded-2xl rounded-bl-none px-4 py-3 flex items-center gap-1 shadow-sm">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
             )}
@@ -519,7 +519,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
             className={`p-3 rounded-xl transition-all border shadow-sm ${
               isListening 
                 ? 'bg-red-50 text-red-500 border-red-200 animate-pulse' 
-                : 'bg-white text-gray-500 border-gray-200 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200'
+                : 'bg-white text-gray-500 border-gray-200 hover:text-primary hover:bg-gray-50 hover:border-primary'
             }`}
             title="Speak"
           >
@@ -541,7 +541,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Ask medical questions or type 'book'..."
-            className="flex-1 px-4 py-2.5 rounded-xl text-sm bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 placeholder-gray-400 shadow-sm text-gray-800 transition-all"
+            className="flex-1 px-4 py-2.5 rounded-xl text-sm bg-white border border-gray-200 focus:outline-none focus:border-primary placeholder-gray-400 shadow-sm text-gray-800 transition-all"
             disabled={isListening}
           />
           
