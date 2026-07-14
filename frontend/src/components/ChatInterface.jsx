@@ -259,15 +259,11 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
       {isGreetingState ? (
         <div className="absolute inset-0 z-0 flex flex-col">
           
-          {/* Full-page Cozy Clinic Office Backdrop (Unblurred with feathered vignette edges) */}
-          <div className="absolute inset-0 z-0 select-none pointer-events-none overflow-hidden flex justify-center items-end">
+          {/* Full-page Cozy Clinic Office Backdrop (Covering entire screen seamlessly) */}
+          <div className="absolute inset-0 z-0 select-none pointer-events-none overflow-hidden">
             <img 
               src={doctorBg} 
-              className="h-[80vh] md:h-[90vh] max-h-[620px] object-contain"
-              style={{
-                maskImage: 'radial-gradient(ellipse 70% 85% at 50% 50%, black 50%, transparent 100%)',
-                WebkitMaskImage: 'radial-gradient(ellipse 70% 85% at 50% 50%, black 50%, transparent 100%)'
-              }}
+              className="w-full h-full object-cover object-bottom"
               alt="Cozy Clinic Background"
             />
           </div>
