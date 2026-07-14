@@ -259,20 +259,22 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
       {isGreetingState ? (
         <div className="absolute inset-0 z-0 flex flex-col">
           
-          {/* Full-page Cozy Clinic Office Backdrop (Covering entire screen seamlessly) */}
+          {/* Full-page Cozy Clinic Office Backdrop (Unblurred, full-screen cover) */}
           <div className="absolute inset-0 z-0 select-none pointer-events-none overflow-hidden">
             <img 
               src={doctorBg} 
-              className="w-full h-full object-cover object-bottom"
+              className="w-full h-full object-cover object-[center_60%] md:object-[center_55%]"
               alt="Cozy Clinic Background"
             />
+            {/* Soft gradient matching the page to blend content */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#e5dad5]/70 via-transparent to-[#e5dad5]/20" />
           </div>
 
           {/* Interactive Landing Grid */}
-          <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 items-center px-6 lg:px-16 pb-32 relative z-10">
+          <div className="flex-1 overflow-y-auto lg:overflow-hidden w-full flex flex-col lg:grid lg:grid-cols-12 items-center px-6 lg:px-16 pb-40 lg:pb-32 relative z-10" style={{ scrollbarWidth: 'none' }}>
             
             {/* Column 1: Left Welcome Content */}
-            <div className="lg:col-span-4 text-center lg:text-left flex flex-col justify-center space-y-4 max-w-md mx-auto lg:mx-0 select-none">
+            <div className="lg:col-span-4 text-center lg:text-left flex flex-col justify-center space-y-4 max-w-md mx-auto lg:mx-0 select-none mt-8 lg:mt-0">
               <h2 className="text-3xl lg:text-[40px] font-black text-gray-800 leading-tight tracking-tight">
                 Hello! I'm <span className="text-teal-600">{getDoctorDisplayName()}</span> 👋
               </h2>
@@ -282,7 +284,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
             </div>
 
             {/* Column 2: Center Spacer for Background Doctor & Speech Bubble */}
-            <div className="lg:col-span-4 flex items-end justify-center h-full relative min-h-[300px] lg:min-h-[450px]">
+            <div className="lg:col-span-4 flex items-end justify-center h-28 lg:h-full relative min-h-[112px] lg:min-h-[450px]">
               
               {/* Speech Bubble centered above doctor's head - only showing while speaking */}
               <AnimatePresence>
@@ -305,7 +307,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
             </div>
 
             {/* Column 3: Right Column "You can ask me about" suggestions card */}
-            <div className="lg:col-span-4 flex justify-center lg:justify-end">
+            <div className="lg:col-span-4 flex justify-center lg:justify-end mt-4 lg:mt-0 mb-8 lg:mb-0">
               <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/50 p-5 w-full max-w-[290px] select-none">
                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">You can ask me about</h3>
                 <div className="flex flex-col divide-y divide-gray-100">
@@ -329,7 +331,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
           </div>
 
           {/* Floating Pill Input Box overlay (centered at bottom) */}
-          <div className="absolute bottom-6 left-0 right-0 z-20 px-4 flex flex-col items-center">
+          <div className="absolute bottom-0 left-0 right-0 z-20 px-4 pb-4 pt-6 bg-gradient-to-t from-[#e5dad5] via-[#e5dad5]/95 to-transparent flex flex-col items-center">
             <div className="max-w-2xl w-full flex flex-col gap-3">
               {/* Symmetrical Rounded Input Box */}
               <form onSubmit={handleSendMessage} className="relative flex items-center bg-white rounded-full border border-gray-200/90 shadow-xl px-5 py-3.5 hover:border-teal-400 transition-colors">
@@ -375,7 +377,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
               </form>
 
               {/* Quick Action Navigation Buttons */}
-              <div className="flex flex-wrap items-center justify-center gap-2">
+              <div className="flex overflow-x-auto whitespace-nowrap items-center justify-start md:justify-center gap-2 py-1 scrollbar-none w-full px-2 md:px-0">
                 <button onClick={() => handleSendMessage(null, "Book Appointment")} className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white border border-gray-200 text-[11px] font-bold text-gray-700 shadow-sm hover:bg-gray-50 active:scale-95 transition-all">
                   <Calendar className="w-3.5 h-3.5 text-teal-600" />
                   Book Appointment
@@ -394,10 +396,10 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                 </button>
               </div>
 
-              {/* Disclaimer */}
-              <div className="text-[10px] text-gray-400 text-center select-none font-medium mt-1">
+              {/* Disclaimer footer */}
+              <p className="text-[10px] text-gray-500/80 text-center select-none font-semibold">
                 This AI assistant provides general information only and does not replace professional medical advice.
-              </div>
+              </p>
             </div>
           </div>
         </div>
