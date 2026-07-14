@@ -253,22 +253,22 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
   };
 
   return (
-    <div 
-      className="w-full h-full min-h-screen relative flex flex-col overflow-hidden font-sans"
-      style={isGreetingState ? {
-        backgroundImage: `url(${doctorBg})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center bottom',
-        backgroundColor: '#e0e7ff'
-      } : {
-        background: 'linear-gradient(to bottom right, #eef2ff, #e0e7ff, #f5f3ff)'
-      }}
-    >
+    <div className="w-full h-full min-h-screen relative flex flex-col overflow-hidden font-sans bg-gradient-to-tr from-[#eef2ff] via-[#e0e7ff] to-[#f5f3ff]">
       
       {/* ================= GREETING STATE (Desktop Mockup Design) ================= */}
       {isGreetingState ? (
         <div className="absolute inset-0 z-0 flex flex-col">
           
+          {/* Blurred Cozy Clinic Backdrop Room */}
+          <div className="absolute inset-0 z-0 select-none pointer-events-none overflow-hidden">
+            <img 
+              src={doctorBg} 
+              className="w-full h-full object-cover blur-[28px] scale-[1.08] opacity-[0.35]"
+              alt="Backdrop Blur"
+            />
+            <div className="absolute inset-0 bg-gradient-to-tr from-[#dbeafe]/60 via-[#e0e7ff]/75 to-[#f3e8ff]/60" />
+          </div>
+
           {/* Interactive Landing Grid */}
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 items-center px-6 lg:px-16 pb-32 relative z-10">
             
@@ -282,13 +282,20 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
               </p>
             </div>
 
-            {/* Column 2: Center Spacer for Background Doctor & Speech Bubble */}
+            {/* Column 2: Center Doctor Portrait & Speech Bubble */}
             <div className="lg:col-span-4 flex items-end justify-center h-full relative min-h-[300px] lg:min-h-[450px]">
               {/* Glowing Teal Halo behind doctor's head */}
               <div className="absolute top-[45%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 md:w-80 md:h-80 rounded-full border border-teal-400/20 shadow-[0_0_80px_rgba(20,184,166,0.18)] animate-pulse z-0" />
               
+              {/* Sharp, unblurred doctor avatar foreground image */}
+              <img 
+                src={doctorBg} 
+                className="h-[52vh] md:h-[62vh] max-h-[440px] object-contain relative z-10 select-none pointer-events-none drop-shadow-2xl"
+                alt="AI Doctor Portrait"
+              />
+
               {/* Speech Bubble floating on the left of doctor */}
-              <div className="absolute top-[35%] left-6 lg:left-[-60px] z-20 max-w-[190px] md:max-w-[210px] hidden md:block">
+              <div className="absolute top-[35%] left-6 lg:left-[-70px] z-20 max-w-[190px] md:max-w-[210px] hidden md:block">
                 <div className="bg-white rounded-2xl px-4 py-3 shadow-lg text-gray-700 text-xs md:text-sm font-semibold relative border border-gray-100/50">
                   {/* Caret pointing right to the doctor */}
                   <div className="absolute top-1/2 -right-1.5 -translate-y-1/2 w-3 h-3 bg-white rotate-45 border-r border-t border-gray-100" />
