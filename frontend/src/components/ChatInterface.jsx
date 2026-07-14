@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Send, Mic, MicOff, Volume2, VolumeX, Calendar, RefreshCw, X,
-  MessageSquare, AlertCircle, Upload, FileText, CheckCircle, CreditCard, Sparkles, Phone, Globe, ChevronRight, Loader2,
-  Shield, DollarSign, Activity, ChevronDown
+  MessageSquare, AlertCircle, Upload, FileText, CheckCircle, CreditCard, Sparkles, Phone, Globe, ChevronRight, Loader2
 } from 'lucide-react';
 import API from '../utils/api';
 
@@ -20,6 +19,10 @@ const formatMarkdown = (text) => {
 };
 
 export default function ChatInterface({ clinicSettings, user, initialMessages, isMuted, gender, setGender }) {
+  const [localGender, setLocalGender] = useState('male');
+  const activeGender = gender || localGender;
+  const activeSetGender = setGender || setLocalGender;
+
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [sessionId, setSessionId] = useState('');
@@ -234,225 +237,212 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
     "Precautions for diabetes"
   ];
 
-  const clinicQuestions = [
-    { text: "Kidney pain or discomfort", color: "text-red-500", icon: "❤️" },
-    { text: "Blood in urine", color: "text-red-600", icon: "💧" },
-    { text: "Swelling in body", color: "text-yellow-600", icon: "😐" },
-    { text: "High blood pressure", color: "text-red-500", icon: "🩺" },
-    { text: "Diet for kidney care", color: "text-green-600", icon: "🍃" }
-  ];
-
-  const doctorBg = clinicSettings.logo || (gender === 'female' ? '/assets/doctor-female.jpg' : '/assets/doctor-male.jpg');
-  const isGreetingState = messages.length <= 1;
-  const getDoctorDisplayName = () => {
-    const name = clinicSettings.doctorName || 'Dr. Ilango S Prakasam';
-    if (/^dr\.?/i.test(name)) {
-      return name;
-    }
-    return `Dr. ${name}`;
-  };
-
   return (
-    <div className="w-full h-full min-h-screen relative flex flex-col overflow-hidden font-sans bg-gradient-to-tr from-[#e5dad5] via-[#f0e6e1] to-[#e8ded9]">
+    <div className="flex flex-col md:flex-row h-full overflow-hidden bg-slate-50 relative select-none">
       
-      {/* ================= GREETING STATE (Desktop Mockup Design) ================= */}
-      {isGreetingState ? (
-        <div className="absolute inset-0 z-0 flex flex-col">
+      {/* ===== LEFT PANEL / BACKGROUND: IMMERSIVE 3D DOCTOR AVATAR ===== */}
+      {/* On mobile, this covers the full screen initially (messages.length <= 1) and hides when the conversation starts */}
+      <div className={`relative flex-shrink-0 flex flex-col justify-between overflow-hidden bg-slate-100 transition-all duration-500 z-10
+        ${messages.length <= 1 
+          ? 'w-full h-full flex' 
+          : 'hidden md:flex md:w-[40%] md:h-full border-r border-gray-200'
+        }`}
+      >
+        {/* Full-bleed Doctor Background Image */}
+        <div className="absolute inset-0 z-0">
+          <img 
+            src={clinicSettings.logo || (activeGender === 'female' ? '/assets/doctor-female.jpg' : '/assets/doctor-male.jpg')} 
+            alt="AI Doctor"
+            className="w-full h-full object-cover object-top"
+          />
+          {/* Light-blue gradient overlay for blending the bottom */}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-slate-900/10 to-transparent" />
+        </div>
+
+        {/* Top Floating Clinic Header */}
+        <div className="relative z-10 p-4 flex justify-between items-center w-full bg-gradient-to-b from-black/20 to-transparent">
+          <span className="bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider text-slate-800 border border-white/20 shadow-md">
+            {clinicSettings.name || 'AI Doctor'}
+          </span>
+          <span className="text-[9px] font-bold text-white bg-green-500/80 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Online
+          </span>
+        </div>
+
+        {/* Center: Immersive Speech Bubble overlay */}
+        <div className="relative z-10 px-6 flex justify-center items-center flex-1">
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-xl text-gray-800 text-[13px] md:text-sm font-semibold max-w-[280px] md:max-w-xs text-center border border-white/30 relative caption-animate" key={bubbleCaption}>
+            {/* Caret arrow */}
+            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white/95 rotate-45 border-r border-b border-gray-200/50" />
+            <span className="relative z-10 block">{bubbleCaption}</span>
+          </div>
+        </div>
+
+        {/* Bottom Panel Actions & Inputs */}
+        <div className="relative z-10 p-4 md:p-6 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent flex flex-col items-center gap-3">
           
-          {/* Full-page Cozy Clinic Office Backdrop (Unblurred, full-screen cover) */}
-          <div className="absolute inset-0 z-0 select-none pointer-events-none overflow-hidden">
-            <img 
-              src={doctorBg} 
-              className="w-full h-full object-cover object-[center_60%] md:object-[center_55%]"
-              alt="Cozy Clinic Background"
-            />
-            {/* Soft gradient matching the page to blend content */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#e5dad5]/70 via-transparent to-[#e5dad5]/20" />
+          {/* Animated soundwaves */}
+          {(isSpeaking || isListening) && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+              className="flex items-center justify-center gap-[2.5px] h-6"
+            >
+              {Array.from({ length: 12 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="w-[3px] rounded-full bg-white"
+                  style={{
+                    animationName: 'soundwave',
+                    animationDuration: `${0.6 + Math.random() * 0.8}s`,
+                    animationTimingFunction: 'ease-in-out',
+                    animationIterationCount: 'infinite',
+                    animationDelay: `${i * 0.05}s`,
+                    height: `${4 + Math.random() * 18}px`
+                  }}
+                />
+              ))}
+            </motion.div>
+          )}
+
+          <div className="flex items-center gap-4">
+            {/* Audio repeat */}
+            <button
+              type="button"
+              onClick={() => speakText(lastBotMsg)}
+              className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 border border-white/25 flex items-center justify-center text-white transition-all shadow-md active:scale-95"
+              title="Repeat Speech"
+            >
+              <Volume2 className="w-4.5 h-4.5" />
+            </button>
+
+            {/* Immersive voice mic */}
+            <button
+              type="button"
+              onClick={toggleListening}
+              className={`w-14 h-14 rounded-full flex items-center justify-center shadow-xl transition-all active:scale-95 ${
+                isListening
+                  ? 'bg-red-500 ring-4 ring-red-100 animate-pulse text-white'
+                  : 'bg-white text-primary hover:scale-105 ring-4 ring-white/10'
+              }`}
+            >
+              <Mic className="w-6 h-6" />
+            </button>
+
+            {/* Gender switcher */}
+            <button
+              type="button"
+              onClick={() => activeSetGender(g => g === 'male' ? 'female' : 'male')}
+              className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 border border-white/25 flex items-center justify-center text-white transition-all shadow-md active:scale-95"
+              title="Switch Doctor Gender"
+            >
+              <Globe className="w-4.5 h-4.5" />
+            </button>
           </div>
 
-          {/* Interactive Landing Grid */}
-          <div className="flex-1 overflow-y-auto lg:overflow-hidden w-full flex flex-col lg:grid lg:grid-cols-12 items-center px-6 lg:px-16 pb-40 lg:pb-32 relative z-10" style={{ scrollbarWidth: 'none' }}>
-            
-            {/* Column 1: Left Welcome Content */}
-            <div className="lg:col-span-4 text-center lg:text-left flex flex-col justify-center space-y-4 max-w-md mx-auto lg:mx-0 select-none mt-8 lg:mt-0">
-              <h2 className="text-3xl lg:text-[40px] font-black text-gray-800 leading-tight tracking-tight">
-                Hello! I'm <span className="text-teal-600">{getDoctorDisplayName()}</span> 👋
-              </h2>
-              <p className="text-sm lg:text-base text-gray-600 font-semibold leading-relaxed">
-                I'm your AI {clinicSettings.specialization?.toLowerCase().includes('nephrology') ? 'nephrology' : 'medical'} assistant. How can I help you with your {clinicSettings.specialization?.toLowerCase().includes('nephrology') ? 'kidney health' : 'health'} today?
-              </p>
-            </div>
-
-            {/* Column 2: Center Spacer for Background Doctor & Speech Bubble */}
-            <div className="lg:col-span-4 flex items-end justify-center h-28 lg:h-full relative min-h-[112px] lg:min-h-[450px]">
-              
-              {/* Speech Bubble centered above doctor's head - only showing while speaking */}
-              <AnimatePresence>
-                {isSpeaking && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute top-[10%] lg:top-[12%] left-1/2 -translate-x-1/2 z-20 w-full max-w-[220px]"
-                  >
-                    <div className="bg-white rounded-2xl px-4 py-3 shadow-lg text-gray-700 text-xs md:text-sm font-semibold relative border border-gray-100/50 text-center">
-                      {/* Caret pointing down to the doctor */}
-                      <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rotate-45 border-r border-b border-gray-100" />
-                      <span className="relative z-10 leading-relaxed block">{bubbleCaption}</span>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Column 3: Right Column "You can ask me about" suggestions card */}
-            <div className="lg:col-span-4 flex justify-center lg:justify-end mt-4 lg:mt-0 mb-8 lg:mb-0">
-              <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/50 p-5 w-full max-w-[290px] select-none">
-                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">You can ask me about</h3>
-                <div className="flex flex-col divide-y divide-gray-100">
-                  {clinicQuestions.map((q, qidx) => (
-                    <button 
-                      key={qidx}
-                      onClick={() => handleSendMessage(null, q.text)}
-                      className="py-3 flex items-center justify-between text-left group hover:opacity-85 transition-opacity"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-sm">{q.icon}</span>
-                        <span className="text-[12px] font-bold text-gray-700 leading-none">{q.text}</span>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-teal-600 transition-colors" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Floating Pill Input Box overlay (centered at bottom) */}
-          <div className="absolute bottom-0 left-0 right-0 z-20 px-4 pb-4 pt-6 bg-gradient-to-t from-[#e5dad5] via-[#e5dad5]/95 to-transparent flex flex-col items-center">
-            <div className="max-w-2xl w-full flex flex-col gap-3">
-              {/* Symmetrical Rounded Input Box */}
-              <form onSubmit={handleSendMessage} className="relative flex items-center bg-white rounded-full border border-gray-200/90 shadow-xl px-5 py-3.5 hover:border-teal-400 transition-colors">
-                
-                {/* Microphone trigger in teal circle */}
-                <button 
+          {/* Suggested Questions Pills (Floating directly above the input on Mobile Welcome screen) */}
+          {messages.length <= 1 && (
+            <div className="flex flex-wrap justify-center gap-1.5 mt-2 max-w-sm md:hidden">
+              {suggestedQuestions.map((q, idx) => (
+                <button
+                  key={idx}
                   type="button"
-                  onClick={toggleListening}
-                  className={`p-2 rounded-full transition-all shadow-sm ${
-                    isListening 
-                      ? 'bg-red-500 text-white animate-pulse' 
-                      : 'bg-teal-500 hover:bg-teal-600 text-white active:scale-95'
-                  }`}
-                  title="Speak"
+                  onClick={() => handleSendMessage(null, q)}
+                  className="px-3 py-1.5 rounded-xl bg-white text-primary text-[10px] font-bold shadow-md border border-gray-100 hover:bg-gray-50 active:scale-95 transition-all"
                 >
-                  {isListening ? (
-                    <div className="flex items-center justify-center h-4 w-4">
-                      <span className="wave-bar h-1" />
-                      <span className="wave-bar h-2" />
-                      <span className="wave-bar h-3" />
-                    </div>
-                  ) : (
-                    <Mic className="w-4 h-4" />
-                  )}
+                  {q}
                 </button>
+              ))}
+            </div>
+          )}
 
+          {/* IMMERSIVE INPUT BAR (Only visible on mobile welcome screen, where the right panel is hidden) */}
+          {messages.length <= 1 && (
+            <div className="w-full mt-2 md:hidden">
+              <form onSubmit={handleSendMessage} className="bg-white/95 backdrop-blur-md rounded-2xl p-2 border border-white/20 shadow-xl flex items-center gap-2">
                 <input
                   type="text"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="Type your message..."
-                  className="flex-1 bg-transparent outline-none text-sm px-4 py-1 text-gray-800 placeholder-gray-400 font-semibold"
+                  placeholder="Ask medical questions or type 'book'..."
+                  className="flex-1 bg-transparent px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none"
                   disabled={isListening}
                 />
-                
-                {/* Send button in teal circle */}
                 <button
                   type="submit"
-                  className="p-2 rounded-full text-white transition-all shadow-sm active:scale-95 flex items-center justify-center bg-teal-500 hover:bg-teal-600 hover:opacity-90"
+                  className="p-3 rounded-xl text-white font-bold transition-all shadow-md active:scale-95 flex items-center justify-center hover:brightness-110"
+                  style={{ backgroundColor: clinicSettings.themeColor }}
                 >
                   <Send className="w-4.5 h-4.5" />
                 </button>
               </form>
-
-              {/* Quick Action Navigation Buttons */}
-              <div className="flex overflow-x-auto whitespace-nowrap items-center justify-start md:justify-center gap-2 py-1 scrollbar-none w-full px-2 md:px-0">
-                <button onClick={() => handleSendMessage(null, "Book Appointment")} className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white border border-gray-200 text-[11px] font-bold text-gray-700 shadow-sm hover:bg-gray-50 active:scale-95 transition-all">
-                  <Calendar className="w-3.5 h-3.5 text-teal-600" />
-                  Book Appointment
-                </button>
-                <button onClick={() => handleSendMessage(null, "Upload reports")} className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white border border-gray-200 text-[11px] font-bold text-gray-700 shadow-sm hover:bg-gray-50 active:scale-95 transition-all">
-                  <Upload className="w-3.5 h-3.5 text-teal-600" />
-                  Upload Report
-                </button>
-                <button onClick={() => handleSendMessage(null, "Check Symptoms")} className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white border border-gray-200 text-[11px] font-bold text-gray-700 shadow-sm hover:bg-gray-50 active:scale-95 transition-all">
-                  <Activity className="w-3.5 h-3.5 text-teal-600" />
-                  Check Symptoms
-                </button>
-                <button onClick={() => handleSendMessage(null, "Consultation Fee")} className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white border border-gray-200 text-[11px] font-bold text-gray-700 shadow-sm hover:bg-gray-50 active:scale-95 transition-all">
-                  <DollarSign className="w-3.5 h-3.5 text-teal-600" />
-                  Consultation Fee
-                </button>
-              </div>
-
-              {/* Disclaimer footer */}
-              <p className="text-[10px] text-gray-500/80 text-center select-none font-semibold">
-                This AI assistant provides general information only and does not replace professional medical advice.
-              </p>
             </div>
-          </div>
+          )}
         </div>
-      ) : (
-        /* ================= ACTIVE CONVERSATION STATE ================= */
-        <>
-          {/* Header Bar */}
-          <div className="w-full bg-white border-b border-gray-200 shadow-sm z-20">
-            <div className="max-w-2xl mx-auto flex items-center justify-between px-5 py-3.5">
-              <div className="flex items-center gap-3">
-                <div className="relative w-10 h-10">
-                  <img src={doctorBg} className="w-full h-full object-cover rounded-full shadow-sm border border-gray-100" alt="Doctor" />
-                  <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-white" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-gray-800">{clinicSettings.doctorName || 'AI Doctor'}</h3>
-                  <p className="text-[10px] text-gray-500 font-medium">{clinicSettings.specialization || 'Consultant'}</p>
-                </div>
+      </div>
+
+      {/* ===== RIGHT PANEL: CHAT HISTORY & PLANS PANEL ===== */}
+      {/* On mobile, this covers the full screen when conversation starts (messages.length > 1) */}
+      <div className={`flex-1 flex flex-col h-full bg-white relative transition-all duration-500
+        ${messages.length <= 1 ? 'hidden md:flex' : 'flex'}`}
+      >
+        {/* Mobile Header Bar (Only visible on mobile when active conversation is ongoing) */}
+        {messages.length > 1 && (
+          <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-gray-100 md:hidden bg-white/95 backdrop-blur-md z-20">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200">
+                <img 
+                  src={clinicSettings.logo || (activeGender === 'female' ? '/assets/doctor-female.jpg' : '/assets/doctor-male.jpg')} 
+                  alt="Doctor avatar"
+                  className="w-full h-full object-cover object-top"
+                />
               </div>
-              
-              {/* Controls in top header */}
-              <div className="flex items-center gap-1.5">
-                {(isSpeaking || isListening) && (
-                  <div className="flex items-center gap-[2px] h-4 mr-2">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className="w-[2px] rounded-full bg-teal-500/70"
-                        style={{
-                          animationName: 'soundwave',
-                          animationDuration: `${0.6 + Math.random() * 0.8}s`,
-                          animationTimingFunction: 'ease-in-out',
-                          animationIterationCount: 'infinite',
-                          animationDelay: `${i * 0.05}s`,
-                          height: `${4 + Math.random() * 10}px`
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-                <button onClick={() => speakText(lastBotMsg)} className="p-2 rounded-full hover:bg-gray-50 text-gray-500 border border-gray-150 bg-white shadow-sm" title="Repeat Speech">
-                  <Volume2 className="w-4 h-4" />
-                </button>
-                <button onClick={() => setGender(g => g === 'male' ? 'female' : 'male')} className="p-2 rounded-full hover:bg-gray-50 text-gray-500 border border-gray-150 bg-white shadow-sm" title="Switch Doctor Gender">
-                  <Globe className="w-4 h-4" />
-                </button>
+              <div>
+                <h4 className="text-xs font-bold text-gray-800 leading-tight">{clinicSettings.doctorName || 'AI Doctor'}</h4>
+                <p className="text-[9px] text-gray-500 font-medium">{clinicSettings.specialization || 'Nephrology Specialists'}</p>
               </div>
             </div>
+            <button
+              onClick={() => activeSetGender(g => g === 'male' ? 'female' : 'male')}
+              className="p-2 rounded-full bg-gray-50 border border-gray-100 text-gray-500 hover:bg-gray-100"
+              title="Switch Doctor Gender"
+            >
+              <Globe className="w-3.5 h-3.5" />
+            </button>
           </div>
+        )}
 
-          {/* Scrollable conversation log */}
-          <div className="flex-1 overflow-y-auto w-full bg-[#f8fafc]" style={{ scrollbarWidth: 'none' }}>
-            <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+        {/* Scrollable Conversation History Feed */}
+        <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-4" style={{ scrollbarWidth: 'none' }}>
+          
+          {/* Welcome Dashboard layout (Shown inside the right pane only on Desktop welcome state) */}
+          {messages.length <= 1 && (
+            <div className="hidden md:flex flex-col items-center justify-center h-full text-center p-6 space-y-6">
+              <Sparkles className="w-10 h-10 text-primary animate-pulse" />
+              <div className="space-y-2">
+                <h2 className="text-xl font-extrabold text-gray-800 tracking-tight">Consult with {clinicSettings.doctorName || 'our AI Doctor'}</h2>
+                <p className="text-xs text-gray-500 max-w-sm leading-relaxed">
+                  Welcome to {clinicSettings.name || 'our virtual portal'}. How can I assist you today? 
+                  Ask medical questions, analyze reports, or book consultations.
+                </p>
+              </div>
+              <div className="flex flex-wrap justify-center gap-2 max-w-md mt-4">
+                {suggestedQuestions.map((q, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleSendMessage(null, q)}
+                    className="px-4 py-2 rounded-xl bg-gray-50 hover:bg-primary/5 border border-gray-200 hover:border-primary text-gray-700 hover:text-primary text-xs font-semibold shadow-sm transition-all"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Chat Messages */}
+          {messages.length > 1 && (
+            <div className="space-y-4 pt-4">
               {messages.slice(1).map((msg, index) => {
                 const isUser = msg.role === 'user';
                 const displayContent = msg.content.startsWith('[') && msg.content.endsWith(']')
@@ -463,45 +453,46 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                   <div key={index} className="flex flex-col space-y-1.5">
                     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
                       <div 
-                        className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs md:text-sm shadow-sm transition-all ${
+                        className={`max-w-[85%] md:max-w-[70%] rounded-2xl px-4 py-3 text-sm shadow-sm transition-all ${
                           isUser 
-                            ? 'bg-teal-500 text-white rounded-br-none border border-teal-500' 
-                            : 'bg-white text-gray-800 border border-gray-100 rounded-bl-none shadow-sm'
+                            ? 'bg-primary text-white rounded-br-none border border-primary animate-fade-in-right' 
+                            : 'bg-gray-50 text-gray-800 border border-gray-100 rounded-bl-none shadow-sm animate-fade-in-left'
                         }`}
                       >
                         {formatMarkdown(displayContent)}
                         
-                        {/* Interactive Widget render */}
+                        {/* Inline Interactive widgets inside message history feed */}
                         {!isUser && msg.action && (
-                          <div className="mt-4 pt-3 border-t border-gray-100 space-y-3">
+                          <div className="mt-4 pt-3 border-t border-gray-200 space-y-3">
                             
-                            {/* 1. Plans select list */}
+                            {/* 1. Plans select list — NephroConsult style cards */}
                             {msg.action.type === 'select_plan' && (
-                              <div className="grid grid-cols-1 gap-2.5">
+                              <div className="grid grid-cols-1 gap-3">
                                 {(clinicSettings.consultationTypes || fallbackPlans).map((plan, pIdx) => (
                                   <button
                                     key={pIdx}
+                                    type="button"
                                     onClick={() => handleSelectPlan(plan.name)}
-                                    className="p-3.5 bg-white hover:bg-gray-50 border border-gray-200 hover:border-teal-500 rounded-xl text-left transition-all active:scale-[0.98] group shadow-sm"
+                                    className="p-4 bg-white hover:bg-gray-50 border border-gray-200 hover:border-primary rounded-xl text-left transition-all active:scale-[0.98] group shadow-sm animate-slide-up"
                                   >
-                                    <div className="flex justify-between items-start mb-1.5">
+                                    <div className="flex justify-between items-start mb-2">
                                       <div>
-                                        <h5 className="text-xs font-bold text-gray-800 group-hover:text-teal-600">{plan.name}</h5>
-                                        <span className="text-[9px] text-gray-500">{plan.duration || 45} min</span>
+                                        <h5 className="text-sm font-bold text-gray-800 group-hover:text-primary">{plan.name}</h5>
+                                        <span className="text-[10px] text-gray-500">{plan.duration || 45} min</span>
                                       </div>
-                                      <span className="text-xs font-extrabold text-teal-600 flex items-center gap-0.5">
+                                      <span className="text-sm font-extrabold text-primary flex items-center gap-1">
                                         ₹{plan.fee || plan.price}
-                                        <span className="text-[8px] font-normal text-gray-400">INR</span>
+                                        <span className="text-[9px] font-normal text-gray-400">INR</span>
                                       </span>
                                     </div>
                                     {plan.description && (
-                                      <p className="text-[10px] text-gray-600 mb-1.5 leading-relaxed">{plan.description}</p>
+                                      <p className="text-[11px] text-gray-600 mb-2">{plan.description}</p>
                                     )}
                                     {plan.benefits && plan.benefits.length > 0 && (
                                       <div className="grid grid-cols-2 gap-x-2 gap-y-1">
                                         {plan.benefits.map((b, bi) => (
-                                          <span key={bi} className="text-[9px] text-gray-500 flex items-center gap-1">
-                                            <span className="text-green-500 text-[8px]">✓</span> {b}
+                                          <span key={bi} className="text-[10px] text-gray-500 flex items-center gap-1">
+                                            <span className="text-green-400 text-[8px]">✓</span> {b}
                                           </span>
                                         ))}
                                       </div>
@@ -511,17 +502,18 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                               </div>
                             )}
 
-                            {/* 2. Swipeable Date picker */}
+                            {/* 2. Swipeable Date picker row */}
                             {msg.action.type === 'select_date' && (
-                              <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+                              <div className="flex gap-2 overflow-x-auto pb-1 animate-slide-up">
                                 {nextDays.map((day, dIdx) => (
                                   <button
                                     key={dIdx}
+                                    type="button"
                                     onClick={() => handleSelectDate(day.dateStr)}
-                                    className="flex-shrink-0 flex flex-col items-center bg-white border border-gray-200 px-2.5 py-1.5 rounded-xl text-center min-w-[50px] hover:bg-gray-50 hover:border-teal-500 transition-all active:scale-95 shadow-sm group"
+                                    className="flex-shrink-0 flex flex-col items-center bg-white border border-gray-200 px-3 py-2 rounded-xl text-center min-w-[54px] hover:bg-gray-50 hover:border-primary transition-all active:scale-95 shadow-sm group"
                                   >
-                                    <span className="text-[8px] text-gray-400 uppercase font-medium group-hover:text-teal-600">{day.dayName}</span>
-                                    <span className="text-xs font-extrabold text-gray-800 group-hover:text-teal-600">{day.dayNum}</span>
+                                    <span className="text-[9px] text-gray-500 uppercase font-medium group-hover:text-primary">{day.dayName}</span>
+                                    <span className="text-sm font-extrabold text-gray-800 group-hover:text-primary">{day.dayNum}</span>
                                   </button>
                                 ))}
                               </div>
@@ -529,12 +521,13 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
 
                             {/* 3. Slot pills grid */}
                             {msg.action.type === 'select_slot' && (
-                              <div className="grid grid-cols-3 gap-2">
+                              <div className="grid grid-cols-3 gap-2 animate-slide-up">
                                 {(msg.action.data.slots || []).map((slot, sIdx) => (
                                   <button
                                     key={sIdx}
+                                    type="button"
                                     onClick={() => handleSelectSlot(slot)}
-                                    className="py-1.5 text-center text-[11px] font-bold bg-white hover:bg-gray-50 border border-gray-200 hover:border-teal-500 rounded-lg text-gray-700 hover:text-teal-600 transition-all active:scale-95 shadow-sm"
+                                    className="py-2 text-center text-xs font-bold bg-white hover:bg-gray-50 border border-gray-200 hover:border-primary rounded-lg text-gray-700 hover:text-primary transition-all active:scale-95 shadow-sm"
                                   >
                                     {slot}
                                   </button>
@@ -542,9 +535,9 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                               </div>
                             )}
 
-                            {/* 4. Drag-and-drop file upload */}
+                            {/* 4. Drag-and-drop document upload block */}
                             {msg.action.type === 'upload_document' && (
-                              <div className="border-2 border-dashed border-gray-200 rounded-xl p-3.5 text-center hover:border-teal-500 transition-all relative bg-gray-50 flex flex-col items-center gap-1.5">
+                              <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:border-primary transition-all relative bg-gray-50 flex flex-col items-center gap-2 animate-slide-up">
                                 <input 
                                   type="file" 
                                   accept=".pdf,.docx,.txt" 
@@ -552,62 +545,64 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                                   disabled={uploadingDoc}
                                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
                                 />
-                                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm border border-gray-200">
-                                  {uploadingDoc ? <Loader2 className="w-4 h-4 text-teal-600 animate-spin" /> : <Upload className="w-4 h-4 text-teal-600" />}
+                                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm border border-gray-200">
+                                  {uploadingDoc ? <Loader2 className="w-5 h-5 text-primary animate-spin" /> : <Upload className="w-5 h-5 text-primary" />}
                                 </div>
-                                <span className="text-xs font-bold text-gray-700">Upload Medical Reports</span>
-                                <span className="text-[8px] text-gray-400">PDF, DOCX, TXT (Max 5MB)</span>
+                                <span className="text-xs font-bold text-gray-700">Click to Upload Medical Reports</span>
+                                <span className="text-[9px] text-gray-500">PDF, DOCX, TXT (Max 5MB)</span>
                               </div>
                             )}
 
-                            {/* 5. UPI QR Code checkout receipt */}
+                            {/* 5. UPI QR Code checkout receipt card */}
                             {msg.action.type === 'payment_checkout' && (
-                              <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm space-y-3.5">
-                                <div className="flex justify-between items-center text-[11px]">
+                              <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-4 animate-slide-up">
+                                <div className="flex justify-between items-center text-xs">
                                   <span className="text-gray-600 font-medium">Plan consultation charge:</span>
-                                  <span className="text-xs font-extrabold text-gray-900">
+                                  <span className="text-sm font-extrabold text-gray-900">
                                     {msg.action.data.currency === 'INR' ? `₹${msg.action.data.amount}` : `$${msg.action.data.amount}`}
                                   </span>
                                 </div>
 
-                                <div className="flex flex-col items-center justify-center bg-white p-2 rounded-lg max-w-[120px] mx-auto shadow-sm border border-gray-150">
+                                <div className="flex flex-col items-center justify-center bg-white p-3 rounded-lg max-w-[140px] mx-auto shadow-md">
                                   <img 
-                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(msg.action.data.qrCode)}`} 
+                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(msg.action.data.qrCode)}`} 
                                     alt="Payment QR"
-                                    className="w-24 h-24"
+                                    className="w-28 h-28"
                                   />
-                                  <span className="text-[8px] text-gray-400 font-bold mt-1 uppercase tracking-wider">Scan with UPI App</span>
+                                  <span className="text-[9px] text-gray-500 font-bold mt-1 uppercase tracking-wider">Scan with UPI App</span>
                                 </div>
 
                                 <button
+                                  type="button"
                                   onClick={handleConfirmPayment}
-                                  className="w-full py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-md flex items-center justify-center gap-1"
+                                  className="w-full py-2.5 bg-primary hover:opacity-90 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5"
                                 >
-                                  <CreditCard className="w-3.5 h-3.5" /> Confirm Payment & Book
+                                  <CreditCard className="w-4 h-4" /> Confirm Payment & Book
                                 </button>
                               </div>
                             )}
 
-                            {/* 6. Success Receipt */}
+                            {/* 6. Success Receipt card */}
                             {msg.action.type === 'booking_confirm' && (
-                              <div className="bg-green-50 border border-green-200 p-3 rounded-xl space-y-2 shadow-sm">
-                                <div className="flex items-center gap-1.5 text-green-600">
-                                  <CheckCircle className="w-4.5 h-4.5 flex-shrink-0" />
-                                  <span className="text-[10px] font-bold uppercase tracking-wider">Appointment Confirmed</span>
+                              <div className="bg-green-50 border border-green-200 p-4 rounded-xl space-y-3 shadow-sm animate-slide-up">
+                                <div className="flex items-center gap-2 text-green-600">
+                                  <CheckCircle className="w-5 h-5 flex-shrink-0" />
+                                  <span className="text-xs font-bold uppercase tracking-wider">Appointment Confirmed</span>
                                 </div>
-                                <div className="space-y-0.5 text-[11px] text-gray-600">
+                                <div className="space-y-1 text-xs text-gray-600">
                                   <p>🩺 Plan: <span className="font-semibold text-gray-900">{msg.action.data.plan}</span></p>
                                   <p>📅 Date: <span className="font-semibold text-gray-900">{msg.action.data.date}</span></p>
                                   <p>⏰ Time: <span className="font-semibold text-gray-900">{msg.action.data.slot}</span></p>
                                 </div>
-                                <div className="text-[9px] text-gray-500 italic">
-                                  Alert dispatched to your email/SMS.
+                                <div className="text-[10px] text-gray-500 italic">
+                                  Confirmation alert has been dispatched to your email/SMS.
                                 </div>
                               </div>
                             )}
 
                           </div>
                         )}
+
                       </div>
                     </div>
                   </div>
@@ -615,71 +610,74 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
               })}
 
               {isTyping && (
-                <div className="flex justify-start">
-                  <div className="bg-white text-gray-800 border border-gray-100 rounded-2xl rounded-bl-none px-3.5 py-2.5 flex items-center gap-1 shadow-sm">
-                    <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+                <div className="flex justify-start animate-pulse">
+                  <div className="bg-gray-50 text-gray-800 border border-gray-100 rounded-2xl rounded-bl-none px-4 py-3 flex items-center gap-1 shadow-sm">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
                 </div>
               )}
               <div ref={messagesEndRef} />
             </div>
-          </div>
+          )}
+        </div>
 
-          {/* Active State Input container */}
-          <div className="w-full bg-white border-t border-gray-200 p-4 z-20">
-            <div className="max-w-2xl mx-auto">
-              <form onSubmit={handleSendMessage} className="relative flex items-center bg-white rounded-full border border-gray-200/90 shadow-sm px-4 py-2 hover:border-teal-500 transition-colors">
-                <input
-                  type="text"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="Type your message..."
-                  className="flex-1 bg-transparent outline-none text-xs md:text-sm pr-16 pl-1 py-1.5 text-gray-800 placeholder-gray-400 font-medium"
-                  disabled={isListening}
-                />
-                
-                <div className="absolute right-2 flex items-center gap-1.5">
-                  <button 
-                    type="button"
-                    onClick={toggleListening}
-                    className={`p-2 rounded-full transition-all ${
-                      isListening 
-                        ? 'bg-red-50 text-red-500 animate-pulse' 
-                        : 'text-gray-400 hover:text-teal-600 hover:bg-gray-50'
-                    }`}
-                    title="Speak"
-                  >
-                    {isListening ? (
-                      <div className="flex items-center justify-center h-4 w-4">
-                        <span className="wave-bar h-1" />
-                        <span className="wave-bar h-2" />
-                        <span className="wave-bar h-3" />
-                      </div>
-                    ) : (
-                      <Mic className="w-4.5 h-4.5" />
-                    )}
-                  </button>
-
-                  <button
-                    type="submit"
-                    className="p-2 rounded-full text-white transition-all shadow-md active:scale-95 flex items-center justify-center hover:opacity-90"
-                    style={{ backgroundColor: clinicSettings.themeColor }}
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                  </button>
+        {/* BOTTOM INPUT BAR (Visible on desktop always, and mobile when active messages history is loaded) */}
+        <div className={`flex-shrink-0 p-4 border-t border-gray-100 bg-white/95 backdrop-blur-md shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.05)] relative z-20
+          ${messages.length <= 1 ? 'hidden md:block' : 'block'}`}
+        >
+          <form onSubmit={handleSendMessage} className="flex gap-2 items-center">
+            
+            <button 
+              type="button"
+              onClick={toggleListening}
+              className={`p-3 rounded-xl transition-all border shadow-sm ${
+                isListening 
+                  ? 'bg-red-50 text-red-500 border-red-200 animate-pulse' 
+                  : 'bg-white text-gray-500 border-gray-200 hover:text-primary hover:bg-gray-50 hover:border-primary'
+              }`}
+              title="Speak"
+            >
+              {isListening ? (
+                <div className="flex items-center justify-center h-4 w-4">
+                  <span className="wave-bar h-1" />
+                  <span className="wave-bar h-2" />
+                  <span className="wave-bar h-3" />
+                  <span className="wave-bar h-2" />
+                  <span className="wave-bar h-1" />
                 </div>
-              </form>
+              ) : (
+                <Mic className="w-4.5 h-4.5" />
+              )}
+            </button>
 
-              {/* Disclaimer */}
-              <div className="mt-2 text-[9px] text-gray-400 text-center select-none leading-normal">
-                AI provides general information only and does not replace professional medical advice.
-              </div>
-            </div>
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder="Ask medical questions or type 'book'..."
+              className="flex-1 px-4 py-2.5 rounded-xl text-sm bg-white border border-gray-200 focus:outline-none focus:border-primary placeholder-gray-400 shadow-sm text-gray-800 transition-all"
+              disabled={isListening}
+            />
+            
+            <button
+              type="submit"
+              className="p-3 rounded-xl text-white font-bold transition-all shadow-lg active:scale-95 flex items-center justify-center hover:brightness-110"
+              style={{ backgroundColor: clinicSettings.themeColor }}
+            >
+              <Send className="w-4.5 h-4.5" />
+            </button>
+          </form>
+
+          <div className="mt-3 flex items-start gap-1 text-[10px] text-gray-500">
+            <AlertCircle className="w-3.5 h-3.5 text-gray-600 flex-shrink-0 mt-0.5" />
+            <span>
+              Disclaimer: This AI assistant provides general wellness information and does not substitute for professional medical advice, diagnosis, or treatment.
+            </span>
           </div>
-        </>
-      )}
+        </div>
+      </div>
 
     </div>
   );
