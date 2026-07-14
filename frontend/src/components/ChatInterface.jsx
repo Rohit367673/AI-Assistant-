@@ -238,66 +238,68 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
   ];
 
   return (
-    <div className="flex flex-col md:flex-row h-full overflow-hidden bg-slate-50 relative select-none">
+    <div className="flex flex-col md:flex-row h-full overflow-hidden bg-gradient-to-tr from-[#f0f4ff] via-[#f8fafc] to-[#f5f3ff] relative select-none">
       
-      {/* ===== LEFT PANEL / BACKGROUND: IMMERSIVE 3D DOCTOR AVATAR ===== */}
+      {/* ===== LEFT PANEL: INTERACTIVE 3D DOCTOR CARD ===== */}
       {/* On mobile, this covers the full screen initially (messages.length <= 1) and hides when the conversation starts */}
-      <div className={`relative flex-shrink-0 flex flex-col justify-between overflow-hidden bg-slate-100 transition-all duration-500 z-10
+      <div className={`relative flex-shrink-0 flex flex-col items-center justify-between p-6 transition-all duration-500 z-10
         ${messages.length <= 1 
           ? 'w-full h-full flex' 
-          : 'hidden md:flex md:w-[40%] md:h-full border-r border-gray-200'
+          : 'hidden md:flex md:w-[42%] md:h-full md:border-r md:border-gray-200/55 bg-gradient-to-b from-[#eef2ff] to-[#f8fafc]'
         }`}
       >
-        {/* Full-bleed Doctor Background Image */}
-        <div className="absolute inset-0 z-0">
-          <img 
-            src={clinicSettings.logo || (activeGender === 'female' ? '/assets/doctor-female.jpg' : '/assets/doctor-male.jpg')} 
-            alt="AI Doctor"
-            className="w-full h-full object-cover object-top"
-          />
-          {/* Light-blue gradient overlay for blending the bottom */}
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-slate-900/10 to-transparent" />
-        </div>
-
-        {/* Top Floating Clinic Header */}
-        <div className="relative z-10 p-4 flex justify-between items-center w-full bg-gradient-to-b from-black/20 to-transparent">
-          <span className="bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider text-slate-800 border border-white/20 shadow-md">
+        {/* Top Header Tag */}
+        <div className="w-full flex justify-between items-center z-10">
+          <span className="bg-white/80 backdrop-blur-md px-3.5 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider text-slate-800 border border-white/35 shadow-sm">
             {clinicSettings.name || 'AI Doctor'}
           </span>
-          <span className="text-[9px] font-bold text-white bg-green-500/80 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
-            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Online
+          <span className="text-[9px] font-bold text-white bg-green-500/85 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Live
           </span>
         </div>
 
-        {/* Center: Immersive Speech Bubble overlay */}
-        <div className="relative z-10 px-6 flex justify-center items-center flex-1">
-          <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-xl text-gray-800 text-[13px] md:text-sm font-semibold max-w-[280px] md:max-w-xs text-center border border-white/30 relative caption-animate" key={bubbleCaption}>
-            {/* Caret arrow */}
-            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white/95 rotate-45 border-r border-b border-gray-200/50" />
-            <span className="relative z-10 block">{bubbleCaption}</span>
+        {/* Center: Rounded 3D Doctor Card */}
+        <div className="flex-1 flex flex-col justify-center items-center w-full max-w-[280px] md:max-w-[310px] py-4">
+          <div className="relative w-full aspect-[4/5] rounded-[32px] overflow-hidden shadow-2xl border-4 border-white bg-slate-100 transition-all duration-300 hover:scale-[1.01] group">
+            <img 
+              src={clinicSettings.logo || (activeGender === 'female' ? '/assets/doctor-female.jpg' : '/assets/doctor-male.jpg')} 
+              alt="AI Doctor Character"
+              className="w-full h-full object-cover object-top"
+            />
+            {/* Soft inner shadow overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent pointer-events-none" />
+          </div>
+
+          {/* Floating Speech Bubble */}
+          <div className="mt-4 relative w-full max-w-[260px] md:max-w-[280px] z-20">
+            <div className="bg-white rounded-2xl p-3 shadow-lg text-gray-800 text-[13px] font-semibold text-center border border-gray-100 relative caption-animate" key={bubbleCaption}>
+              {/* Caret pointing up to the doctor */}
+              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white rotate-45 border-l border-t border-gray-100" />
+              <span className="relative z-10 block leading-snug">{bubbleCaption}</span>
+            </div>
           </div>
         </div>
 
-        {/* Bottom Panel Actions & Inputs */}
-        <div className="relative z-10 p-4 md:p-6 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent flex flex-col items-center gap-3">
+        {/* Bottom Panel Actions & Sound waves */}
+        <div className="w-full flex flex-col items-center gap-3 z-10">
           
           {/* Animated soundwaves */}
           {(isSpeaking || isListening) && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-              className="flex items-center justify-center gap-[2.5px] h-6"
+              className="flex items-center justify-center gap-[2.5px] h-5"
             >
               {Array.from({ length: 12 }).map((_, i) => (
                 <div
                   key={i}
-                  className="w-[3px] rounded-full bg-white"
+                  className="w-[2.5px] rounded-full bg-primary"
                   style={{
                     animationName: 'soundwave',
                     animationDuration: `${0.6 + Math.random() * 0.8}s`,
                     animationTimingFunction: 'ease-in-out',
                     animationIterationCount: 'infinite',
                     animationDelay: `${i * 0.05}s`,
-                    height: `${4 + Math.random() * 18}px`
+                    height: `${4 + Math.random() * 16}px`
                   }}
                 />
               ))}
@@ -309,7 +311,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
             <button
               type="button"
               onClick={() => speakText(lastBotMsg)}
-              className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 border border-white/25 flex items-center justify-center text-white transition-all shadow-md active:scale-95"
+              className="w-10 h-10 rounded-full bg-white hover:bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-500 hover:text-primary transition-all shadow-sm active:scale-95"
               title="Repeat Speech"
             >
               <Volume2 className="w-4.5 h-4.5" />
@@ -319,10 +321,10 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
             <button
               type="button"
               onClick={toggleListening}
-              className={`w-14 h-14 rounded-full flex items-center justify-center shadow-xl transition-all active:scale-95 ${
+              className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-95 ${
                 isListening
-                  ? 'bg-red-500 ring-4 ring-red-100 animate-pulse text-white'
-                  : 'bg-white text-primary hover:scale-105 ring-4 ring-white/10'
+                  ? 'bg-red-500 ring-4 ring-red-100 text-white animate-pulse'
+                  : 'bg-white text-primary hover:scale-105 ring-4 ring-white/10 border border-gray-100'
               }`}
             >
               <Mic className="w-6 h-6" />
@@ -332,14 +334,14 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
             <button
               type="button"
               onClick={() => activeSetGender(g => g === 'male' ? 'female' : 'male')}
-              className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 border border-white/25 flex items-center justify-center text-white transition-all shadow-md active:scale-95"
+              className="w-10 h-10 rounded-full bg-white hover:bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-500 hover:text-primary transition-all shadow-sm active:scale-95"
               title="Switch Doctor Gender"
             >
               <Globe className="w-4.5 h-4.5" />
             </button>
           </div>
 
-          {/* Suggested Questions Pills (Floating directly above the input on Mobile Welcome screen) */}
+          {/* Suggested Questions (Mobile Welcome Screen only) */}
           {messages.length <= 1 && (
             <div className="flex flex-wrap justify-center gap-1.5 mt-2 max-w-sm md:hidden">
               {suggestedQuestions.map((q, idx) => (
@@ -347,7 +349,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                   key={idx}
                   type="button"
                   onClick={() => handleSendMessage(null, q)}
-                  className="px-3 py-1.5 rounded-xl bg-white text-primary text-[10px] font-bold shadow-md border border-gray-100 hover:bg-gray-50 active:scale-95 transition-all"
+                  className="px-3 py-1.5 rounded-xl bg-white text-primary text-[10px] font-bold shadow-sm border border-gray-100 hover:bg-gray-50 active:scale-95 transition-all"
                 >
                   {q}
                 </button>
@@ -355,10 +357,10 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
             </div>
           )}
 
-          {/* IMMERSIVE INPUT BAR (Only visible on mobile welcome screen, where the right panel is hidden) */}
+          {/* Mobile Welcome Input Bar (Only visible on mobile when welcome screen is active) */}
           {messages.length <= 1 && (
             <div className="w-full mt-2 md:hidden">
-              <form onSubmit={handleSendMessage} className="bg-white/95 backdrop-blur-md rounded-2xl p-2 border border-white/20 shadow-xl flex items-center gap-2">
+              <form onSubmit={handleSendMessage} className="bg-white/95 backdrop-blur-md rounded-2xl p-2 border border-gray-200 shadow-lg flex items-center gap-2">
                 <input
                   type="text"
                   value={inputValue}
@@ -380,16 +382,16 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
         </div>
       </div>
 
-      {/* ===== RIGHT PANEL: CHAT HISTORY & PLANS PANEL ===== */}
+      {/* ===== RIGHT PANEL: CHAT HISTORY FEED ===== */}
       {/* On mobile, this covers the full screen when conversation starts (messages.length > 1) */}
-      <div className={`flex-1 flex flex-col h-full bg-white relative transition-all duration-500
+      <div className={`flex-grow flex flex-col h-full bg-white relative transition-all duration-500
         ${messages.length <= 1 ? 'hidden md:flex' : 'flex'}`}
       >
-        {/* Mobile Header Bar (Only visible on mobile when active conversation is ongoing) */}
+        {/* Mobile Header Bar (Only visible on mobile during active conversation) */}
         {messages.length > 1 && (
           <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-gray-100 md:hidden bg-white/95 backdrop-blur-md z-20">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200">
+              <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 shadow-sm">
                 <img 
                   src={clinicSettings.logo || (activeGender === 'female' ? '/assets/doctor-female.jpg' : '/assets/doctor-male.jpg')} 
                   alt="Doctor avatar"
@@ -404,17 +406,17 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
             <button
               onClick={() => activeSetGender(g => g === 'male' ? 'female' : 'male')}
               className="p-2 rounded-full bg-gray-50 border border-gray-100 text-gray-500 hover:bg-gray-100"
-              title="Switch Doctor Gender"
+              title="Switch Doctor"
             >
               <Globe className="w-3.5 h-3.5" />
             </button>
           </div>
         )}
 
-        {/* Scrollable Conversation History Feed */}
-        <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-4" style={{ scrollbarWidth: 'none' }}>
+        {/* Scrollable Conversation Feed */}
+        <div className="flex-grow overflow-y-auto px-4 md:px-8 pb-4" style={{ scrollbarWidth: 'none' }}>
           
-          {/* Welcome Dashboard layout (Shown inside the right pane only on Desktop welcome state) */}
+          {/* Welcome Screen Dashboard Layout (Shown inside the right pane on Desktop welcome state) */}
           {messages.length <= 1 && (
             <div className="hidden md:flex flex-col items-center justify-center h-full text-center p-6 space-y-6">
               <Sparkles className="w-10 h-10 text-primary animate-pulse" />
@@ -440,7 +442,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
             </div>
           )}
 
-          {/* Chat Messages */}
+          {/* Actual Chat Messages Feed */}
           {messages.length > 1 && (
             <div className="space-y-4 pt-4">
               {messages.slice(1).map((msg, index) => {
@@ -450,13 +452,13 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                   : msg.content;
 
                 return (
-                  <div key={index} className="flex flex-col space-y-1.5">
+                  <div key={index} className="flex flex-col space-y-1.5 animate-fade-in">
                     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
                       <div 
                         className={`max-w-[85%] md:max-w-[70%] rounded-2xl px-4 py-3 text-sm shadow-sm transition-all ${
                           isUser 
-                            ? 'bg-primary text-white rounded-br-none border border-primary animate-fade-in-right' 
-                            : 'bg-gray-50 text-gray-800 border border-gray-100 rounded-bl-none shadow-sm animate-fade-in-left'
+                            ? 'bg-primary text-white rounded-br-none border border-primary' 
+                            : 'bg-gray-50 text-gray-800 border border-gray-100 rounded-bl-none shadow-sm'
                         }`}
                       >
                         {formatMarkdown(displayContent)}
@@ -473,7 +475,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                                     key={pIdx}
                                     type="button"
                                     onClick={() => handleSelectPlan(plan.name)}
-                                    className="p-4 bg-white hover:bg-gray-50 border border-gray-200 hover:border-primary rounded-xl text-left transition-all active:scale-[0.98] group shadow-sm animate-slide-up"
+                                    className="p-4 bg-white hover:bg-gray-50 border border-gray-200 hover:border-primary rounded-xl text-left transition-all active:scale-[0.98] group shadow-sm"
                                   >
                                     <div className="flex justify-between items-start mb-2">
                                       <div>
@@ -504,7 +506,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
 
                             {/* 2. Swipeable Date picker row */}
                             {msg.action.type === 'select_date' && (
-                              <div className="flex gap-2 overflow-x-auto pb-1 animate-slide-up">
+                              <div className="flex gap-2 overflow-x-auto pb-1">
                                 {nextDays.map((day, dIdx) => (
                                   <button
                                     key={dIdx}
@@ -521,7 +523,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
 
                             {/* 3. Slot pills grid */}
                             {msg.action.type === 'select_slot' && (
-                              <div className="grid grid-cols-3 gap-2 animate-slide-up">
+                              <div className="grid grid-cols-3 gap-2">
                                 {(msg.action.data.slots || []).map((slot, sIdx) => (
                                   <button
                                     key={sIdx}
@@ -537,7 +539,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
 
                             {/* 4. Drag-and-drop document upload block */}
                             {msg.action.type === 'upload_document' && (
-                              <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:border-primary transition-all relative bg-gray-50 flex flex-col items-center gap-2 animate-slide-up">
+                              <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:border-primary transition-all relative bg-gray-50 flex flex-col items-center gap-2">
                                 <input 
                                   type="file" 
                                   accept=".pdf,.docx,.txt" 
@@ -555,7 +557,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
 
                             {/* 5. UPI QR Code checkout receipt card */}
                             {msg.action.type === 'payment_checkout' && (
-                              <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-4 animate-slide-up">
+                              <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-4">
                                 <div className="flex justify-between items-center text-xs">
                                   <span className="text-gray-600 font-medium">Plan consultation charge:</span>
                                   <span className="text-sm font-extrabold text-gray-900">
@@ -584,7 +586,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
 
                             {/* 6. Success Receipt card */}
                             {msg.action.type === 'booking_confirm' && (
-                              <div className="bg-green-50 border border-green-200 p-4 rounded-xl space-y-3 shadow-sm animate-slide-up">
+                              <div className="bg-green-50 border border-green-200 p-4 rounded-xl space-y-3 shadow-sm">
                                 <div className="flex items-center gap-2 text-green-600">
                                   <CheckCircle className="w-5 h-5 flex-shrink-0" />
                                   <span className="text-xs font-bold uppercase tracking-wider">Appointment Confirmed</span>
@@ -610,7 +612,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
               })}
 
               {isTyping && (
-                <div className="flex justify-start animate-pulse">
+                <div className="flex justify-start">
                   <div className="bg-gray-50 text-gray-800 border border-gray-100 rounded-2xl rounded-bl-none px-4 py-3 flex items-center gap-1 shadow-sm">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
                     <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
