@@ -238,14 +238,24 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
   ];
 
   return (
-    <div className="flex flex-col md:flex-row h-full overflow-hidden bg-gradient-to-tr from-[#f0f4ff] via-[#f8fafc] to-[#f5f3ff] relative select-none">
+    <div className="flex flex-col md:flex-row h-full overflow-hidden relative select-none">
       
+      {/* ===== GLOBAL BLURRED BACKDROP ===== */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <img 
+          src={clinicSettings.logo || (activeGender === 'female' ? '/assets/doctor-female.jpg' : '/assets/doctor-male.jpg')} 
+          alt="Blur backdrop"
+          className="w-full h-full object-cover object-top filter blur-3xl brightness-95 opacity-40 scale-105"
+        />
+        <div className="absolute inset-0 bg-gradient-to-tr from-[#f0f4ff]/50 via-transparent to-[#f5f3ff]/50" />
+      </div>
+
       {/* ===== LEFT PANEL: INTERACTIVE 3D DOCTOR CARD ===== */}
       {/* On mobile, this covers the full screen initially (messages.length <= 1) and hides when the conversation starts */}
-      <div className={`relative flex-shrink-0 flex flex-col items-center justify-between p-6 transition-all duration-500 z-10
+      <div className={`relative flex-shrink-0 flex flex-col items-center justify-between p-6 transition-all duration-500 z-10 bg-transparent
         ${messages.length <= 1 
-          ? 'w-full h-full flex' 
-          : 'hidden md:flex md:w-[42%] md:h-full md:border-r md:border-gray-200/55 bg-gradient-to-b from-[#eef2ff] to-[#f8fafc]'
+          ? 'w-full h-full flex md:w-[40%] md:h-full md:flex' 
+          : 'hidden md:flex md:w-[40%] md:h-full'
         }`}
       >
         {/* Top Header Tag */}
@@ -258,16 +268,16 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
           </span>
         </div>
 
-        {/* Center: Rounded 3D Doctor Card */}
+        {/* Center: Rounded 3D Doctor Card with Float animation */}
         <div className="flex-1 flex flex-col justify-center items-center w-full max-w-[280px] md:max-w-[310px] py-4">
-          <div className="relative w-full aspect-[4/5] rounded-[32px] overflow-hidden shadow-2xl border-4 border-white bg-slate-100 transition-all duration-300 hover:scale-[1.01] group">
+          <div className="relative w-full aspect-[4/5] rounded-[32px] overflow-hidden shadow-2xl border-4 border-white bg-slate-100 transition-all duration-300 hover:scale-[1.01] animate-float z-10">
             <img 
               src={clinicSettings.logo || (activeGender === 'female' ? '/assets/doctor-female.jpg' : '/assets/doctor-male.jpg')} 
               alt="AI Doctor Character"
               className="w-full h-full object-cover object-top"
             />
             {/* Soft inner shadow overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
           </div>
 
           {/* Floating Speech Bubble */}
@@ -383,9 +393,11 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
       </div>
 
       {/* ===== RIGHT PANEL: CHAT HISTORY FEED ===== */}
-      {/* On mobile, this covers the full screen when conversation starts (messages.length > 1) */}
-      <div className={`flex-grow flex flex-col h-full bg-white relative transition-all duration-500
-        ${messages.length <= 1 ? 'hidden md:flex' : 'flex'}`}
+      <div className={`flex-grow flex flex-col h-full bg-white/90 backdrop-blur-md md:border-l md:border-gray-200/40 relative transition-all duration-500 z-10
+        ${messages.length <= 1 
+          ? 'hidden md:flex md:w-[60%]' 
+          : 'flex w-full md:w-[60%]'
+        }`}
       >
         {/* Mobile Header Bar (Only visible on mobile during active conversation) */}
         {messages.length > 1 && (
