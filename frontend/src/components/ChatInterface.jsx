@@ -294,14 +294,24 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                 alt="AI Doctor Portrait"
               />
 
-              {/* Speech Bubble floating on the left of doctor */}
-              <div className="absolute top-[35%] left-6 lg:left-[-70px] z-20 max-w-[190px] md:max-w-[210px] hidden md:block">
-                <div className="bg-white rounded-2xl px-4 py-3 shadow-lg text-gray-700 text-xs md:text-sm font-semibold relative border border-gray-100/50">
-                  {/* Caret pointing right to the doctor */}
-                  <div className="absolute top-1/2 -right-1.5 -translate-y-1/2 w-3 h-3 bg-white rotate-45 border-r border-t border-gray-100" />
-                  <span className="relative z-10 leading-relaxed block">{bubbleCaption}</span>
-                </div>
-              </div>
+              {/* Speech Bubble centered above doctor's head - only showing while speaking */}
+              <AnimatePresence>
+                {isSpeaking && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute top-[10%] lg:top-[12%] left-1/2 -translate-x-1/2 z-20 w-full max-w-[220px]"
+                  >
+                    <div className="bg-white rounded-2xl px-4 py-3 shadow-xl text-gray-700 text-xs md:text-sm font-semibold relative border border-gray-100/50 text-center">
+                      {/* Caret pointing down to the doctor */}
+                      <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rotate-45 border-r border-b border-gray-100" />
+                      <span className="relative z-10 leading-relaxed block">{bubbleCaption}</span>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Column 3: Right Column "You can ask me about" suggestions card */}
