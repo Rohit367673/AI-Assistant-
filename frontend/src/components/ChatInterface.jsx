@@ -240,27 +240,30 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
   return (
     <div className="flex flex-col md:flex-row h-full overflow-hidden relative select-none">
       
-      {/* ===== GLOBAL BLURRED BACKDROP ===== */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <img 
-          src={clinicSettings.logo || (activeGender === 'female' ? '/assets/doctor-female.jpg' : '/assets/doctor-male.jpg')} 
-          alt="Blur backdrop"
-          className="w-full h-full object-cover object-top filter blur-3xl brightness-95 opacity-40 scale-105"
-        />
-        <div className="absolute inset-0 bg-gradient-to-tr from-[#f0f4ff]/50 via-transparent to-[#f5f3ff]/50" />
-      </div>
-
-      {/* ===== LEFT PANEL: INTERACTIVE 3D DOCTOR CARD ===== */}
+      {/* ===== LEFT PANEL: IMMERSIVE 3D DOCTOR AREA ===== */}
       {/* On mobile, this covers the full screen initially (messages.length <= 1) and hides when the conversation starts */}
-      <div className={`relative flex-shrink-0 flex flex-col items-center justify-between p-6 transition-all duration-500 z-10 bg-transparent
+      <div className={`relative flex-shrink-0 flex flex-col items-center justify-between p-6 transition-all duration-500 z-10 bg-slate-100
         ${messages.length <= 1 
           ? 'w-full h-full flex md:w-[40%] md:h-full md:flex' 
           : 'hidden md:flex md:w-[40%] md:h-full'
         }`}
       >
+        {/* Full-bleed Doctor Background with 3D float and talk-reactivity animation */}
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+          <img 
+            src={clinicSettings.logo || (activeGender === 'female' ? '/assets/doctor-female.jpg' : '/assets/doctor-male.jpg')} 
+            alt="AI Doctor"
+            className={`w-full h-full object-cover object-top transition-all duration-700
+              ${isSpeaking ? 'scale-105 brightness-105' : 'scale-100'} 
+              animate-float`}
+          />
+          {/* Light-blue gradient overlay for blending the bottom */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#f8fafc] via-[#f8fafc]/10 to-black/10" />
+        </div>
+
         {/* Top Header Tag */}
         <div className="w-full flex justify-between items-center z-10">
-          <span className="bg-white/80 backdrop-blur-md px-3.5 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider text-slate-800 border border-white/35 shadow-sm">
+          <span className="bg-white/85 backdrop-blur-md px-3.5 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider text-slate-800 border border-white/30 shadow-sm">
             {clinicSettings.name || 'AI Doctor'}
           </span>
           <span className="text-[9px] font-bold text-white bg-green-500/85 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
@@ -268,23 +271,12 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
           </span>
         </div>
 
-        {/* Center: Rounded 3D Doctor Card with Float animation */}
-        <div className="flex-1 flex flex-col justify-center items-center w-full max-w-[280px] md:max-w-[310px] py-4">
-          <div className="relative w-full aspect-[4/5] rounded-[32px] overflow-hidden shadow-2xl border-4 border-white bg-slate-100 transition-all duration-300 hover:scale-[1.01] animate-float z-10">
-            <img 
-              src={clinicSettings.logo || (activeGender === 'female' ? '/assets/doctor-female.jpg' : '/assets/doctor-male.jpg')} 
-              alt="AI Doctor Character"
-              className="w-full h-full object-cover object-top"
-            />
-            {/* Soft inner shadow overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
-          </div>
-
-          {/* Floating Speech Bubble */}
-          <div className="mt-4 relative w-full max-w-[260px] md:max-w-[280px] z-20">
-            <div className="bg-white rounded-2xl p-3 shadow-lg text-gray-800 text-[13px] font-semibold text-center border border-gray-100 relative caption-animate" key={bubbleCaption}>
-              {/* Caret pointing up to the doctor */}
-              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white rotate-45 border-l border-t border-gray-100" />
+        {/* Center: Immersive Speech Bubble overlay */}
+        <div className="flex-1 flex flex-col justify-center items-center w-full max-w-[280px] md:max-w-[310px] py-4 z-10">
+          <div className="relative w-full max-w-[260px] md:max-w-[280px] mt-24">
+            <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-xl text-gray-800 text-[13px] font-semibold text-center border border-white/40 relative caption-animate" key={bubbleCaption}>
+              {/* Caret pointing down */}
+              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white/95 rotate-45 border-r border-b border-gray-200/50" />
               <span className="relative z-10 block leading-snug">{bubbleCaption}</span>
             </div>
           </div>
