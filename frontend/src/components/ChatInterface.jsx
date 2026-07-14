@@ -244,88 +244,51 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
 
   const doctorBg = clinicSettings.logo || (gender === 'female' ? '/assets/doctor-female.jpg' : '/assets/doctor-male.jpg');
   const isGreetingState = messages.length <= 1;
-  const doctorLastName = clinicSettings.doctorName ? clinicSettings.doctorName.split(' ').pop() : 'Nephro';
+  const getDoctorDisplayName = () => {
+    const name = clinicSettings.doctorName || 'Dr. Ilango S Prakasam';
+    if (/^dr\.?/i.test(name)) {
+      return name;
+    }
+    return `Dr. ${name}`;
+  };
 
   return (
-    <div className="w-full h-full min-h-screen relative flex flex-col bg-gradient-to-tr from-[#eef2ff] via-[#e0e7ff] to-[#f5f3ff] overflow-hidden font-sans">
+    <div 
+      className="w-full h-full min-h-screen relative flex flex-col overflow-hidden font-sans"
+      style={isGreetingState ? {
+        backgroundImage: `url(${doctorBg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center bottom',
+        backgroundColor: '#e0e7ff'
+      } : {
+        background: 'linear-gradient(to bottom right, #eef2ff, #e0e7ff, #f5f3ff)'
+      }}
+    >
       
       {/* ================= GREETING STATE (Desktop Mockup Design) ================= */}
       {isGreetingState ? (
         <div className="absolute inset-0 z-0 flex flex-col">
           
-          {/* Blurred Cozy Clinic Backdrop Room */}
-          <div className="absolute inset-0 z-0 select-none pointer-events-none overflow-hidden">
-            <img 
-              src={doctorBg} 
-              className="w-full h-full object-cover blur-[18px] scale-[1.08] opacity-[0.25]"
-              alt="Backdrop Blur"
-            />
-            <div className="absolute inset-0 bg-gradient-to-tr from-[#dbeafe]/60 via-[#e0e7ff]/75 to-[#f3e8ff]/60" />
-          </div>
-
-          {/* Premium Top Navigation Bar */}
-          <header className="w-full z-30 px-6 py-4 flex items-center justify-between bg-white/40 backdrop-blur-md border-b border-white/30">
-            {/* Logo */}
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-full bg-teal-500 flex items-center justify-center text-white font-black shadow-md shadow-teal-500/20">
-                N
-              </div>
-              <div className="leading-tight">
-                <h1 className="text-sm font-black text-gray-800 tracking-tight">{clinicSettings.name || 'NephroConsult'}</h1>
-                <p className="text-[9px] text-teal-600 font-bold uppercase tracking-wider">AI Doctor Assistant</p>
-              </div>
-            </div>
-
-            {/* Right Header Navigation Controls */}
-            <div className="flex items-center gap-4">
-              {/* Safe data badge */}
-              <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50 border border-teal-100 text-[10px] text-teal-600 font-bold">
-                <Shield className="w-3.5 h-3.5" />
-                Your data is safe
-              </div>
-              {/* Language selection dropdown */}
-              <div className="hidden sm:flex items-center gap-1 text-[11px] font-bold text-gray-600 bg-white/60 hover:bg-white/80 border border-gray-200 px-3 py-1 rounded-full cursor-pointer shadow-sm">
-                <Globe className="w-3.5 h-3.5" />
-                English
-                <ChevronDown className="w-3 h-3 text-gray-400" />
-              </div>
-              {/* Outline Book Button */}
-              <button 
-                onClick={() => handleSendMessage(null, "Book Appointment")}
-                className="flex items-center gap-1.5 px-4.5 py-1.5 rounded-full border border-teal-500 hover:bg-teal-50 text-[11px] text-teal-600 font-bold transition-all shadow-sm shadow-teal-500/5 active:scale-95"
-              >
-                <Calendar className="w-3.5 h-3.5" />
-                Book Appointment
-              </button>
-            </div>
-          </header>
-
           {/* Interactive Landing Grid */}
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 items-center px-6 lg:px-16 pb-32 relative z-10">
             
             {/* Column 1: Left Welcome Content */}
             <div className="lg:col-span-4 text-center lg:text-left flex flex-col justify-center space-y-4 max-w-md mx-auto lg:mx-0 select-none">
               <h2 className="text-3xl lg:text-[40px] font-black text-gray-800 leading-tight tracking-tight">
-                Hello! I'm <span className="text-teal-600">Dr. {doctorLastName}</span> 👋
+                Hello! I'm <span className="text-teal-600">{getDoctorDisplayName()}</span> 👋
               </h2>
-              <p className="text-sm lg:text-base text-gray-600 font-medium leading-relaxed">
+              <p className="text-sm lg:text-base text-gray-600 font-semibold leading-relaxed">
                 I'm your AI {clinicSettings.specialization?.toLowerCase().includes('nephrology') ? 'nephrology' : 'medical'} assistant. How can I help you with your {clinicSettings.specialization?.toLowerCase().includes('nephrology') ? 'kidney health' : 'health'} today?
               </p>
             </div>
 
-            {/* Column 2: Center Doctor Portrait with Halo Effect */}
+            {/* Column 2: Center Spacer for Background Doctor & Speech Bubble */}
             <div className="lg:col-span-4 flex items-end justify-center h-full relative min-h-[300px] lg:min-h-[450px]">
               {/* Glowing Teal Halo behind doctor's head */}
               <div className="absolute top-[45%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 md:w-80 md:h-80 rounded-full border border-teal-400/20 shadow-[0_0_80px_rgba(20,184,166,0.18)] animate-pulse z-0" />
               
-              <img 
-                src={doctorBg} 
-                className="h-[55vh] md:h-[65vh] max-h-[460px] object-contain relative z-10 select-none pointer-events-none"
-                alt="AI Doctor Portrait"
-              />
-              
               {/* Speech Bubble floating on the left of doctor */}
-              <div className="absolute top-[35%] left-6 lg:left-0 z-20 max-w-[190px] md:max-w-[210px] hidden md:block">
+              <div className="absolute top-[35%] left-6 lg:left-[-60px] z-20 max-w-[190px] md:max-w-[210px] hidden md:block">
                 <div className="bg-white rounded-2xl px-4 py-3 shadow-lg text-gray-700 text-xs md:text-sm font-semibold relative border border-gray-100/50">
                   {/* Caret pointing right to the doctor */}
                   <div className="absolute top-1/2 -right-1.5 -translate-y-1/2 w-3 h-3 bg-white rotate-45 border-r border-t border-gray-100" />
