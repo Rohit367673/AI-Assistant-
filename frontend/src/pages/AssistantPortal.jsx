@@ -82,39 +82,39 @@ export default function AssistantPortal() {
   );
 
   return (
-    <div className="h-screen w-screen flex items-center justify-center p-0 md:p-4 overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #020617 100%)' }}>
+    <div className="h-screen w-screen flex items-center justify-center p-0 md:p-4 overflow-hidden" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #e0e7ff 50%, #f1f5f9 100%)' }}>
       
       {/* Immersive full-viewport or centered card layout */}
-      <div className="w-full h-full md:max-w-5xl md:h-[92vh] md:rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-white/10 relative"
-           style={{ background: 'linear-gradient(160deg, #1e152a 0%, #17153a 35%, #0f1026 100%)' }}>
+      <div className="w-full h-full md:max-w-5xl md:h-[92vh] md:rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-indigo-100 relative"
+           style={{ background: 'linear-gradient(160deg, #ffffff 0%, #f8fafc 35%, #f1f5f9 100%)' }}>
         
         {/* Header Bar */}
-        <header className="flex items-center justify-between px-4 md:px-6 py-4 bg-white/5 backdrop-blur-xl border-b border-white/10 z-10 flex-shrink-0">
+        <header className="flex items-center justify-between px-4 md:px-6 py-4 bg-white/80 backdrop-blur-xl border-b border-gray-200 z-10 flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full flex items-center justify-center shadow-lg" style={{ background: `linear-gradient(135deg, ${settings.themeColor}, #312e81)` }}>
+            <div className="w-9 h-9 rounded-full flex items-center justify-center shadow-md" style={{ background: `linear-gradient(135deg, ${settings.themeColor}, #6366f1)` }}>
               <svg viewBox="0 0 24 24" className="w-4.5 h-4.5 text-white" fill="currentColor">
                 <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
               </svg>
             </div>
             <div>
-              <h1 className="text-sm font-extrabold text-white leading-tight drop-shadow-sm">{settings.name || 'AI Doctor'}</h1>
-              <p className="text-[10px] text-white/60 font-medium">{settings.specialization || 'General Medicine'}</p>
+              <h1 className="text-sm font-extrabold text-gray-800 leading-tight drop-shadow-sm">{settings.name || 'AI Doctor'}</h1>
+              <p className="text-[10px] text-gray-500 font-medium">{settings.specialization || 'General Medicine'}</p>
             </div>
           </div>
 
           {/* Authentication & Setting Controls */}
           <div className="flex items-center gap-3">
             {/* Mute Voice Responses button */}
-            <button onClick={() => setIsMuted(!isMuted)} className="p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors" title={isMuted ? 'Unmute' : 'Mute'}>
+            <button onClick={() => setIsMuted(!isMuted)} className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors" title={isMuted ? 'Unmute' : 'Mute'}>
               {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
             </button>
 
             {/* Google Authentication Trigger */}
             {user ? (
-              <div className="flex items-center gap-2 bg-white/10 hover:bg-white/15 px-3 py-1.5 rounded-full border border-white/10 transition-all">
-                <img src={user.avatar} className="w-5 h-5 rounded-full object-cover" alt="Profile" />
-                <span className="hidden sm:inline text-xs font-bold text-white truncate max-w-[80px]">{user.name}</span>
-                <button onClick={handleSignOut} className="text-[9px] text-red-400 font-bold hover:text-red-300 ml-1 uppercase">Sign Out</button>
+              <div className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-full border border-gray-200 transition-all">
+                <img src={user.avatar} className="w-5 h-5 rounded-full object-cover shadow-sm" alt="Profile" />
+                <span className="hidden sm:inline text-xs font-bold text-gray-700 truncate max-w-[80px]">{user.name}</span>
+                <button onClick={handleSignOut} className="text-[9px] text-red-500 font-bold hover:text-red-600 ml-1 uppercase">Sign Out</button>
               </div>
             ) : (
               <button onClick={handleGoogleLogin} className="flex items-center gap-2 bg-white text-gray-800 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg hover:bg-gray-100 active:scale-95 transition-all">

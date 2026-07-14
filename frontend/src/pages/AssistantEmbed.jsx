@@ -41,10 +41,10 @@ export default function AssistantEmbed() {
 
   if (loading) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-slate-950 text-white p-4">
+      <div className="h-screen w-screen flex items-center justify-center bg-slate-50 text-slate-800 p-4">
         <div className="flex flex-col items-center gap-2">
           <div className="w-8 h-8 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-          <span className="text-xs text-gray-500 font-medium">Securing assistant channel...</span>
+          <span className="text-xs text-slate-500 font-medium">Securing assistant channel...</span>
         </div>
       </div>
     );
@@ -52,17 +52,17 @@ export default function AssistantEmbed() {
 
   if (error) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-slate-950 text-white p-6">
-        <div className="p-4 rounded-xl border border-red-500/20 bg-red-500/10 text-center max-w-xs space-y-2">
-          <h4 className="font-bold text-red-400 text-sm">Embed Config Error</h4>
-          <p className="text-xs text-gray-400">{error}</p>
+      <div className="h-screen w-screen flex items-center justify-center bg-slate-50 text-slate-800 p-6">
+        <div className="p-4 rounded-xl border border-red-500/20 bg-red-50 text-center max-w-xs space-y-2">
+          <h4 className="font-bold text-red-600 text-sm">Embed Config Error</h4>
+          <p className="text-xs text-slate-600">{error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen w-screen bg-[#070913]">
+    <div className="h-screen w-screen bg-white">
       <ChatInterface clinicSettings={settings} isEmbedded={true} />
     </div>
   );
