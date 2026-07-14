@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Send, Mic, MicOff, Volume2, VolumeX, Calendar, RefreshCw, X,
-  MessageSquare, AlertCircle, Upload, FileText, CheckCircle, CreditCard, Sparkles, Phone, Globe, ChevronRight, Loader2
+  MessageSquare, AlertCircle, Upload, FileText, CheckCircle, CreditCard, Sparkles, Phone, Globe, ChevronRight, Loader2,
+  Shield, DollarSign, Activity, ChevronDown
 } from 'lucide-react';
 import API from '../utils/api';
 
@@ -233,72 +234,228 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
     "Precautions for diabetes"
   ];
 
+  const clinicQuestions = [
+    { text: "Kidney pain or discomfort", color: "text-red-500", icon: "❤️" },
+    { text: "Blood in urine", color: "text-red-600", icon: "💧" },
+    { text: "Swelling in body", color: "text-yellow-600", icon: "😐" },
+    { text: "High blood pressure", color: "text-red-500", icon: "🩺" },
+    { text: "Diet for kidney care", color: "text-green-600", icon: "🍃" }
+  ];
+
   const doctorBg = clinicSettings.logo || (gender === 'female' ? '/assets/doctor-female.jpg' : '/assets/doctor-male.jpg');
   const isGreetingState = messages.length <= 1;
+  const doctorLastName = clinicSettings.doctorName ? clinicSettings.doctorName.split(' ').pop() : 'Nephro';
 
   return (
-    <div className="flex items-center justify-center h-full w-full bg-slate-50/55 p-2 md:p-4">
-      {/* Outer Card Container to mimic the phone/widget layout */}
-      <div className="w-full max-w-[440px] h-[660px] rounded-[32px] overflow-hidden shadow-2xl border border-gray-200/80 flex flex-col relative bg-[#f8fafc]">
-        
-        {/* ================= GREETING STATE (Mockup design) ================= */}
-        {isGreetingState ? (
-          <div className="absolute inset-0 z-0 flex flex-col justify-end">
-            {/* Full-bleed Doctor portrait background */}
-            <div className="absolute inset-0 z-0 flex justify-center items-end pb-16">
+    <div className="w-full h-full min-h-screen relative flex flex-col bg-gradient-to-tr from-[#eef2ff] via-[#e0e7ff] to-[#f5f3ff] overflow-hidden font-sans">
+      
+      {/* ================= GREETING STATE (Desktop Mockup Design) ================= */}
+      {isGreetingState ? (
+        <div className="absolute inset-0 z-0 flex flex-col">
+          
+          {/* Blurred Cozy Clinic Backdrop Room */}
+          <div className="absolute inset-0 z-0 select-none pointer-events-none overflow-hidden">
+            <img 
+              src={doctorBg} 
+              className="w-full h-full object-cover blur-[18px] scale-[1.08] opacity-[0.25]"
+              alt="Backdrop Blur"
+            />
+            <div className="absolute inset-0 bg-gradient-to-tr from-[#dbeafe]/60 via-[#e0e7ff]/75 to-[#f3e8ff]/60" />
+          </div>
+
+          {/* Premium Top Navigation Bar */}
+          <header className="w-full z-30 px-6 py-4 flex items-center justify-between bg-white/40 backdrop-blur-md border-b border-white/30">
+            {/* Logo */}
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-full bg-teal-500 flex items-center justify-center text-white font-black shadow-md shadow-teal-500/20">
+                N
+              </div>
+              <div className="leading-tight">
+                <h1 className="text-sm font-black text-gray-800 tracking-tight">{clinicSettings.name || 'NephroConsult'}</h1>
+                <p className="text-[9px] text-teal-600 font-bold uppercase tracking-wider">AI Doctor Assistant</p>
+              </div>
+            </div>
+
+            {/* Right Header Navigation Controls */}
+            <div className="flex items-center gap-4">
+              {/* Safe data badge */}
+              <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50 border border-teal-100 text-[10px] text-teal-600 font-bold">
+                <Shield className="w-3.5 h-3.5" />
+                Your data is safe
+              </div>
+              {/* Language selection dropdown */}
+              <div className="hidden sm:flex items-center gap-1 text-[11px] font-bold text-gray-600 bg-white/60 hover:bg-white/80 border border-gray-200 px-3 py-1 rounded-full cursor-pointer shadow-sm">
+                <Globe className="w-3.5 h-3.5" />
+                English
+                <ChevronDown className="w-3 h-3 text-gray-400" />
+              </div>
+              {/* Outline Book Button */}
+              <button 
+                onClick={() => handleSendMessage(null, "Book Appointment")}
+                className="flex items-center gap-1.5 px-4.5 py-1.5 rounded-full border border-teal-500 hover:bg-teal-50 text-[11px] text-teal-600 font-bold transition-all shadow-sm shadow-teal-500/5 active:scale-95"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                Book Appointment
+              </button>
+            </div>
+          </header>
+
+          {/* Interactive Landing Grid */}
+          <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 items-center px-6 lg:px-16 pb-32 relative z-10">
+            
+            {/* Column 1: Left Welcome Content */}
+            <div className="lg:col-span-4 text-center lg:text-left flex flex-col justify-center space-y-4 max-w-md mx-auto lg:mx-0 select-none">
+              <h2 className="text-3xl lg:text-[40px] font-black text-gray-800 leading-tight tracking-tight">
+                Hello! I'm <span className="text-teal-600">Dr. {doctorLastName}</span> 👋
+              </h2>
+              <p className="text-sm lg:text-base text-gray-600 font-medium leading-relaxed">
+                I'm your AI {clinicSettings.specialization?.toLowerCase().includes('nephrology') ? 'nephrology' : 'medical'} assistant. How can I help you with your {clinicSettings.specialization?.toLowerCase().includes('nephrology') ? 'kidney health' : 'health'} today?
+              </p>
+            </div>
+
+            {/* Column 2: Center Doctor Portrait with Halo Effect */}
+            <div className="lg:col-span-4 flex items-end justify-center h-full relative min-h-[300px] lg:min-h-[450px]">
+              {/* Glowing Teal Halo behind doctor's head */}
+              <div className="absolute top-[45%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 md:w-80 md:h-80 rounded-full border border-teal-400/20 shadow-[0_0_80px_rgba(20,184,166,0.18)] animate-pulse z-0" />
+              
               <img 
                 src={doctorBg} 
-                className="h-[85%] object-contain"
-                alt="Doctor Avatar"
+                className="h-[55vh] md:h-[65vh] max-h-[460px] object-contain relative z-10 select-none pointer-events-none"
+                alt="AI Doctor Portrait"
               />
-              {/* Soft purple-blue overlay to fade the doctor image at the bottom */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#f8fafc] via-[#f8fafc]/30 to-transparent" />
-            </div>
-
-            {/* Speech Bubble floating on the left */}
-            <div className="absolute top-[40%] left-4 z-20 max-w-[220px]">
-              <div className="bg-white rounded-2xl px-4 py-3 shadow-lg text-gray-700 text-xs font-semibold relative border border-gray-100">
-                {/* Pointer caret pointing right to the doctor */}
-                <div className="absolute top-1/2 -right-1.5 -translate-y-1/2 w-3 h-3 bg-white rotate-45 border-r border-t border-gray-100" />
-                <span className="relative z-10 leading-relaxed block">{bubbleCaption}</span>
+              
+              {/* Speech Bubble floating on the left of doctor */}
+              <div className="absolute top-[35%] left-6 lg:left-0 z-20 max-w-[190px] md:max-w-[210px] hidden md:block">
+                <div className="bg-white rounded-2xl px-4 py-3 shadow-lg text-gray-700 text-xs md:text-sm font-semibold relative border border-gray-100/50">
+                  {/* Caret pointing right to the doctor */}
+                  <div className="absolute top-1/2 -right-1.5 -translate-y-1/2 w-3 h-3 bg-white rotate-45 border-r border-t border-gray-100" />
+                  <span className="relative z-10 leading-relaxed block">{bubbleCaption}</span>
+                </div>
               </div>
             </div>
 
-            {/* Suggested Question Pills floating above input */}
-            <div className="absolute bottom-20 left-0 right-0 z-20 px-4 flex flex-wrap gap-2 justify-center">
-              {suggestedQuestions.map((q, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleSendMessage(null, q)}
-                  className="px-4 py-2 rounded-full bg-white/90 backdrop-blur-sm text-primary text-[11px] font-bold shadow-sm hover:shadow-md hover:scale-[1.02] transition-all border border-gray-200/50"
+            {/* Column 3: Right Column "You can ask me about" suggestions card */}
+            <div className="lg:col-span-4 flex justify-center lg:justify-end">
+              <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/50 p-5 w-full max-w-[290px] select-none">
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">You can ask me about</h3>
+                <div className="flex flex-col divide-y divide-gray-100">
+                  {clinicQuestions.map((q, qidx) => (
+                    <button 
+                      key={qidx}
+                      onClick={() => handleSendMessage(null, q.text)}
+                      className="py-3 flex items-center justify-between text-left group hover:opacity-85 transition-opacity"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-sm">{q.icon}</span>
+                        <span className="text-[12px] font-bold text-gray-700 leading-none">{q.text}</span>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-teal-600 transition-colors" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Floating Pill Input Box overlay (centered at bottom) */}
+          <div className="absolute bottom-6 left-0 right-0 z-20 px-4 flex flex-col items-center">
+            <div className="max-w-2xl w-full flex flex-col gap-3">
+              {/* Symmetrical Rounded Input Box */}
+              <form onSubmit={handleSendMessage} className="relative flex items-center bg-white rounded-full border border-gray-200/90 shadow-xl px-5 py-3.5 hover:border-teal-400 transition-colors">
+                
+                {/* Microphone trigger in teal circle */}
+                <button 
+                  type="button"
+                  onClick={toggleListening}
+                  className={`p-2 rounded-full transition-all shadow-sm ${
+                    isListening 
+                      ? 'bg-red-500 text-white animate-pulse' 
+                      : 'bg-teal-500 hover:bg-teal-600 text-white active:scale-95'
+                  }`}
+                  title="Speak"
                 >
-                  {q}
+                  {isListening ? (
+                    <div className="flex items-center justify-center h-4 w-4">
+                      <span className="wave-bar h-1" />
+                      <span className="wave-bar h-2" />
+                      <span className="wave-bar h-3" />
+                    </div>
+                  ) : (
+                    <Mic className="w-4 h-4" />
+                  )}
                 </button>
-              ))}
+
+                <input
+                  type="text"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  placeholder="Type your message..."
+                  className="flex-1 bg-transparent outline-none text-sm px-4 py-1 text-gray-800 placeholder-gray-400 font-semibold"
+                  disabled={isListening}
+                />
+                
+                {/* Send button in teal circle */}
+                <button
+                  type="submit"
+                  className="p-2 rounded-full text-white transition-all shadow-sm active:scale-95 flex items-center justify-center bg-teal-500 hover:bg-teal-600 hover:opacity-90"
+                >
+                  <Send className="w-4.5 h-4.5" />
+                </button>
+              </form>
+
+              {/* Quick Action Navigation Buttons */}
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <button onClick={() => handleSendMessage(null, "Book Appointment")} className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white border border-gray-200 text-[11px] font-bold text-gray-700 shadow-sm hover:bg-gray-50 active:scale-95 transition-all">
+                  <Calendar className="w-3.5 h-3.5 text-teal-600" />
+                  Book Appointment
+                </button>
+                <button onClick={() => handleSendMessage(null, "Upload reports")} className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white border border-gray-200 text-[11px] font-bold text-gray-700 shadow-sm hover:bg-gray-50 active:scale-95 transition-all">
+                  <Upload className="w-3.5 h-3.5 text-teal-600" />
+                  Upload Report
+                </button>
+                <button onClick={() => handleSendMessage(null, "Check Symptoms")} className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white border border-gray-200 text-[11px] font-bold text-gray-700 shadow-sm hover:bg-gray-50 active:scale-95 transition-all">
+                  <Activity className="w-3.5 h-3.5 text-teal-600" />
+                  Check Symptoms
+                </button>
+                <button onClick={() => handleSendMessage(null, "Consultation Fee")} className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white border border-gray-200 text-[11px] font-bold text-gray-700 shadow-sm hover:bg-gray-50 active:scale-95 transition-all">
+                  <DollarSign className="w-3.5 h-3.5 text-teal-600" />
+                  Consultation Fee
+                </button>
+              </div>
+
+              {/* Disclaimer */}
+              <div className="text-[10px] text-gray-400 text-center select-none font-medium mt-1">
+                This AI assistant provides general information only and does not replace professional medical advice.
+              </div>
             </div>
           </div>
-        ) : (
-          /* ================= ACTIVE CONVERSATION STATE ================= */
-          <>
-            {/* Header Bar */}
-            <div className="flex items-center gap-3 px-5 py-3.5 bg-white border-b border-gray-200/80 z-20 shadow-sm">
-              <div className="relative w-10 h-10">
-                <img src={doctorBg} className="w-full h-full object-cover rounded-full shadow-sm border border-gray-100" alt="Doctor" />
-                <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-white" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-gray-800">{clinicSettings.doctorName || 'AI Doctor'}</h3>
-                <p className="text-[10px] text-gray-500 font-medium">{clinicSettings.specialization || 'Consultant'}</p>
+        </div>
+      ) : (
+        /* ================= ACTIVE CONVERSATION STATE ================= */
+        <>
+          {/* Header Bar */}
+          <div className="w-full bg-white border-b border-gray-200 shadow-sm z-20">
+            <div className="max-w-2xl mx-auto flex items-center justify-between px-5 py-3.5">
+              <div className="flex items-center gap-3">
+                <div className="relative w-10 h-10">
+                  <img src={doctorBg} className="w-full h-full object-cover rounded-full shadow-sm border border-gray-100" alt="Doctor" />
+                  <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-white" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-gray-800">{clinicSettings.doctorName || 'AI Doctor'}</h3>
+                  <p className="text-[10px] text-gray-500 font-medium">{clinicSettings.specialization || 'Consultant'}</p>
+                </div>
               </div>
               
               {/* Controls in top header */}
-              <div className="ml-auto flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5">
                 {(isSpeaking || isListening) && (
                   <div className="flex items-center gap-[2px] h-4 mr-2">
                     {Array.from({ length: 5 }).map((_, i) => (
                       <div
                         key={i}
-                        className="w-[2px] rounded-full bg-primary/70"
+                        className="w-[2px] rounded-full bg-teal-500/70"
                         style={{
                           animationName: 'soundwave',
                           animationDuration: `${0.6 + Math.random() * 0.8}s`,
@@ -311,17 +468,19 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                     ))}
                   </div>
                 )}
-                <button onClick={() => speakText(lastBotMsg)} className="p-2 rounded-full hover:bg-gray-50 text-gray-500 border border-gray-100 bg-white" title="Repeat Speech">
+                <button onClick={() => speakText(lastBotMsg)} className="p-2 rounded-full hover:bg-gray-50 text-gray-500 border border-gray-150 bg-white shadow-sm" title="Repeat Speech">
                   <Volume2 className="w-4 h-4" />
                 </button>
-                <button onClick={() => setGender(g => g === 'male' ? 'female' : 'male')} className="p-2 rounded-full hover:bg-gray-50 text-gray-500 border border-gray-100 bg-white" title="Switch Doctor Gender">
+                <button onClick={() => setGender(g => g === 'male' ? 'female' : 'male')} className="p-2 rounded-full hover:bg-gray-50 text-gray-500 border border-gray-150 bg-white shadow-sm" title="Switch Doctor Gender">
                   <Globe className="w-4 h-4" />
                 </button>
               </div>
             </div>
+          </div>
 
-            {/* Scrollable conversation log */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4" style={{ scrollbarWidth: 'none' }}>
+          {/* Scrollable conversation log */}
+          <div className="flex-1 overflow-y-auto w-full bg-[#f8fafc]" style={{ scrollbarWidth: 'none' }}>
+            <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
               {messages.slice(1).map((msg, index) => {
                 const isUser = msg.role === 'user';
                 const displayContent = msg.content.startsWith('[') && msg.content.endsWith(']')
@@ -334,7 +493,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                       <div 
                         className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs md:text-sm shadow-sm transition-all ${
                           isUser 
-                            ? 'bg-primary text-white rounded-br-none border border-primary' 
+                            ? 'bg-teal-500 text-white rounded-br-none border border-teal-500' 
                             : 'bg-white text-gray-800 border border-gray-100 rounded-bl-none shadow-sm'
                         }`}
                       >
@@ -351,14 +510,14 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                                   <button
                                     key={pIdx}
                                     onClick={() => handleSelectPlan(plan.name)}
-                                    className="p-3.5 bg-white hover:bg-gray-50 border border-gray-200 hover:border-primary rounded-xl text-left transition-all active:scale-[0.98] group shadow-sm"
+                                    className="p-3.5 bg-white hover:bg-gray-50 border border-gray-200 hover:border-teal-500 rounded-xl text-left transition-all active:scale-[0.98] group shadow-sm"
                                   >
                                     <div className="flex justify-between items-start mb-1.5">
                                       <div>
-                                        <h5 className="text-xs font-bold text-gray-800 group-hover:text-primary">{plan.name}</h5>
+                                        <h5 className="text-xs font-bold text-gray-800 group-hover:text-teal-600">{plan.name}</h5>
                                         <span className="text-[9px] text-gray-500">{plan.duration || 45} min</span>
                                       </div>
-                                      <span className="text-xs font-extrabold text-primary flex items-center gap-0.5">
+                                      <span className="text-xs font-extrabold text-teal-600 flex items-center gap-0.5">
                                         ₹{plan.fee || plan.price}
                                         <span className="text-[8px] font-normal text-gray-400">INR</span>
                                       </span>
@@ -387,10 +546,10 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                                   <button
                                     key={dIdx}
                                     onClick={() => handleSelectDate(day.dateStr)}
-                                    className="flex-shrink-0 flex flex-col items-center bg-white border border-gray-200 px-2.5 py-1.5 rounded-xl text-center min-w-[50px] hover:bg-gray-50 hover:border-primary transition-all active:scale-95 shadow-sm group"
+                                    className="flex-shrink-0 flex flex-col items-center bg-white border border-gray-200 px-2.5 py-1.5 rounded-xl text-center min-w-[50px] hover:bg-gray-50 hover:border-teal-500 transition-all active:scale-95 shadow-sm group"
                                   >
-                                    <span className="text-[8px] text-gray-400 uppercase font-medium group-hover:text-primary">{day.dayName}</span>
-                                    <span className="text-xs font-extrabold text-gray-800 group-hover:text-primary">{day.dayNum}</span>
+                                    <span className="text-[8px] text-gray-400 uppercase font-medium group-hover:text-teal-600">{day.dayName}</span>
+                                    <span className="text-xs font-extrabold text-gray-800 group-hover:text-teal-600">{day.dayNum}</span>
                                   </button>
                                 ))}
                               </div>
@@ -403,7 +562,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                                   <button
                                     key={sIdx}
                                     onClick={() => handleSelectSlot(slot)}
-                                    className="py-1.5 text-center text-[11px] font-bold bg-white hover:bg-gray-50 border border-gray-200 hover:border-primary rounded-lg text-gray-700 hover:text-primary transition-all active:scale-95 shadow-sm"
+                                    className="py-1.5 text-center text-[11px] font-bold bg-white hover:bg-gray-50 border border-gray-200 hover:border-teal-500 rounded-lg text-gray-700 hover:text-teal-600 transition-all active:scale-95 shadow-sm"
                                   >
                                     {slot}
                                   </button>
@@ -413,7 +572,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
 
                             {/* 4. Drag-and-drop file upload */}
                             {msg.action.type === 'upload_document' && (
-                              <div className="border-2 border-dashed border-gray-200 rounded-xl p-3.5 text-center hover:border-primary transition-all relative bg-gray-50 flex flex-col items-center gap-1.5">
+                              <div className="border-2 border-dashed border-gray-200 rounded-xl p-3.5 text-center hover:border-teal-500 transition-all relative bg-gray-50 flex flex-col items-center gap-1.5">
                                 <input 
                                   type="file" 
                                   accept=".pdf,.docx,.txt" 
@@ -422,7 +581,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
                                 />
                                 <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm border border-gray-200">
-                                  {uploadingDoc ? <Loader2 className="w-4 h-4 text-primary animate-spin" /> : <Upload className="w-4 h-4 text-primary" />}
+                                  {uploadingDoc ? <Loader2 className="w-4 h-4 text-teal-600 animate-spin" /> : <Upload className="w-4 h-4 text-teal-600" />}
                                 </div>
                                 <span className="text-xs font-bold text-gray-700">Upload Medical Reports</span>
                                 <span className="text-[8px] text-gray-400">PDF, DOCX, TXT (Max 5MB)</span>
@@ -450,7 +609,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
 
                                 <button
                                   onClick={handleConfirmPayment}
-                                  className="w-full py-2 bg-primary hover:opacity-90 text-white rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-md flex items-center justify-center gap-1"
+                                  className="w-full py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-md flex items-center justify-center gap-1"
                                 >
                                   <CreditCard className="w-3.5 h-3.5" /> Confirm Payment & Book
                                 </button>
@@ -486,68 +645,70 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
               {isTyping && (
                 <div className="flex justify-start">
                   <div className="bg-white text-gray-800 border border-gray-100 rounded-2xl rounded-bl-none px-3.5 py-2.5 flex items-center gap-1 shadow-sm">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
                 </div>
               )}
               <div ref={messagesEndRef} />
             </div>
-          </>
-        )}
-
-        {/* ===== FLOATING BOTTOM INPUT PILL ===== */}
-        <div className="flex-shrink-0 p-4 bg-transparent relative z-20 mt-auto">
-          <form onSubmit={handleSendMessage} className="relative flex items-center bg-white rounded-full border border-gray-200/90 shadow-lg px-4 py-2 hover:border-primary/50 transition-colors">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Type your message..."
-              className="flex-1 bg-transparent outline-none text-xs md:text-sm pr-16 pl-1 py-1.5 text-gray-800 placeholder-gray-400"
-              disabled={isListening}
-            />
-            
-            <div className="absolute right-2 flex items-center gap-1.5">
-              <button 
-                type="button"
-                onClick={toggleListening}
-                className={`p-2 rounded-full transition-all ${
-                  isListening 
-                    ? 'bg-red-50 text-red-500 animate-pulse' 
-                    : 'text-gray-400 hover:text-primary hover:bg-gray-50'
-                }`}
-                title="Speak"
-              >
-                {isListening ? (
-                  <div className="flex items-center justify-center h-4 w-4">
-                    <span className="wave-bar h-1" />
-                    <span className="wave-bar h-2" />
-                    <span className="wave-bar h-3" />
-                  </div>
-                ) : (
-                  <Mic className="w-4.5 h-4.5" />
-                )}
-              </button>
-
-              <button
-                type="submit"
-                className="p-2 rounded-full text-white transition-all shadow-md active:scale-95 flex items-center justify-center hover:opacity-90"
-                style={{ backgroundColor: clinicSettings.themeColor }}
-              >
-                <Send className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </form>
-
-          {/* Small Disclaimer */}
-          <div className="mt-2.5 text-[9px] text-gray-400 text-center select-none leading-normal">
-            AI provides general information only and does not replace professional medical advice.
           </div>
-        </div>
 
-      </div>
+          {/* Active State Input container */}
+          <div className="w-full bg-white border-t border-gray-200 p-4 z-20">
+            <div className="max-w-2xl mx-auto">
+              <form onSubmit={handleSendMessage} className="relative flex items-center bg-white rounded-full border border-gray-200/90 shadow-sm px-4 py-2 hover:border-teal-500 transition-colors">
+                <input
+                  type="text"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  placeholder="Type your message..."
+                  className="flex-1 bg-transparent outline-none text-xs md:text-sm pr-16 pl-1 py-1.5 text-gray-800 placeholder-gray-400 font-medium"
+                  disabled={isListening}
+                />
+                
+                <div className="absolute right-2 flex items-center gap-1.5">
+                  <button 
+                    type="button"
+                    onClick={toggleListening}
+                    className={`p-2 rounded-full transition-all ${
+                      isListening 
+                        ? 'bg-red-50 text-red-500 animate-pulse' 
+                        : 'text-gray-400 hover:text-teal-600 hover:bg-gray-50'
+                    }`}
+                    title="Speak"
+                  >
+                    {isListening ? (
+                      <div className="flex items-center justify-center h-4 w-4">
+                        <span className="wave-bar h-1" />
+                        <span className="wave-bar h-2" />
+                        <span className="wave-bar h-3" />
+                      </div>
+                    ) : (
+                      <Mic className="w-4.5 h-4.5" />
+                    )}
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="p-2 rounded-full text-white transition-all shadow-md active:scale-95 flex items-center justify-center hover:opacity-90"
+                    style={{ backgroundColor: clinicSettings.themeColor }}
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </form>
+
+              {/* Disclaimer */}
+              <div className="mt-2 text-[9px] text-gray-400 text-center select-none leading-normal">
+                AI provides general information only and does not replace professional medical advice.
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
     </div>
   );
 }
