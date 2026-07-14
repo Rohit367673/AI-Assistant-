@@ -253,20 +253,23 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
   };
 
   return (
-    <div className="w-full h-full min-h-screen relative flex flex-col overflow-hidden font-sans bg-gradient-to-tr from-[#eef2ff] via-[#e0e7ff] to-[#f5f3ff]">
+    <div className="w-full h-full min-h-screen relative flex flex-col overflow-hidden font-sans bg-gradient-to-tr from-[#e5dad5] via-[#f0e6e1] to-[#e8ded9]">
       
       {/* ================= GREETING STATE (Desktop Mockup Design) ================= */}
       {isGreetingState ? (
         <div className="absolute inset-0 z-0 flex flex-col">
           
-          {/* Blurred Cozy Clinic Backdrop Room */}
-          <div className="absolute inset-0 z-0 select-none pointer-events-none overflow-hidden">
+          {/* Full-page Cozy Clinic Office Backdrop (Unblurred with feathered vignette edges) */}
+          <div className="absolute inset-0 z-0 select-none pointer-events-none overflow-hidden flex justify-center items-end">
             <img 
               src={doctorBg} 
-              className="w-full h-full object-cover blur-[28px] scale-[1.08] opacity-[0.35]"
-              alt="Backdrop Blur"
+              className="h-[80vh] md:h-[90vh] max-h-[620px] object-contain"
+              style={{
+                maskImage: 'radial-gradient(ellipse 70% 85% at 50% 50%, black 50%, transparent 100%)',
+                WebkitMaskImage: 'radial-gradient(ellipse 70% 85% at 50% 50%, black 50%, transparent 100%)'
+              }}
+              alt="Cozy Clinic Background"
             />
-            <div className="absolute inset-0 bg-gradient-to-tr from-[#dbeafe]/60 via-[#e0e7ff]/75 to-[#f3e8ff]/60" />
           </div>
 
           {/* Interactive Landing Grid */}
@@ -282,16 +285,9 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
               </p>
             </div>
 
-            {/* Column 2: Center Doctor Portrait & Speech Bubble */}
+            {/* Column 2: Center Spacer for Background Doctor & Speech Bubble */}
             <div className="lg:col-span-4 flex items-end justify-center h-full relative min-h-[300px] lg:min-h-[450px]">
               
-              {/* Sharp, unblurred doctor avatar foreground image */}
-              <img 
-                src={doctorBg} 
-                className="h-[52vh] md:h-[62vh] max-h-[440px] object-contain relative z-10 select-none pointer-events-none drop-shadow-2xl rounded-2xl"
-                alt="AI Doctor Portrait"
-              />
-
               {/* Speech Bubble centered above doctor's head - only showing while speaking */}
               <AnimatePresence>
                 {isSpeaking && (
@@ -302,7 +298,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                     transition={{ duration: 0.2 }}
                     className="absolute top-[10%] lg:top-[12%] left-1/2 -translate-x-1/2 z-20 w-full max-w-[220px]"
                   >
-                    <div className="bg-white rounded-2xl px-4 py-3 shadow-xl text-gray-700 text-xs md:text-sm font-semibold relative border border-gray-100/50 text-center">
+                    <div className="bg-white rounded-2xl px-4 py-3 shadow-lg text-gray-700 text-xs md:text-sm font-semibold relative border border-gray-100/50 text-center">
                       {/* Caret pointing down to the doctor */}
                       <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rotate-45 border-r border-b border-gray-100" />
                       <span className="relative z-10 leading-relaxed block">{bubbleCaption}</span>
