@@ -284,13 +284,11 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
 
             {/* Column 2: Center Doctor Portrait & Speech Bubble */}
             <div className="lg:col-span-4 flex items-end justify-center h-full relative min-h-[300px] lg:min-h-[450px]">
-              {/* Glowing Teal Halo behind doctor's head */}
-              <div className="absolute top-[45%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 md:w-80 md:h-80 rounded-full border border-teal-400/20 shadow-[0_0_80px_rgba(20,184,166,0.18)] animate-pulse z-0" />
               
               {/* Sharp, unblurred doctor avatar foreground image */}
               <img 
                 src={doctorBg} 
-                className="h-[52vh] md:h-[62vh] max-h-[440px] object-contain relative z-10 select-none pointer-events-none drop-shadow-2xl"
+                className="h-[52vh] md:h-[62vh] max-h-[440px] object-contain relative z-10 select-none pointer-events-none drop-shadow-2xl rounded-2xl"
                 alt="AI Doctor Portrait"
               />
 
