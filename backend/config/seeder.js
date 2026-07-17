@@ -87,29 +87,28 @@ export const seedDefaultClinics = async () => {
           { day: 'Saturday', open: '10:00', close: '14:00', enabled: true },
           { day: 'Sunday', open: '09:00', close: '12:00', enabled: false }
         ],
-        appointmentSlots: ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00'],
         consultationTypes: [
-          { name: 'Nephrology Consultation', fee: 150 },
-          { name: 'CKD Management & Checkup', fee: 200 },
-          { name: 'Dialysis Session Booking', fee: 120 }
+          { name: 'Initial Consultation', fee: 499 },
+          { name: 'Follow-up Consultation', fee: 399 },
+          { name: 'Urgent Consultation', fee: 999 }
         ],
         paymentSettings: {
           qrCodeEnabled: true,
-          qrValue: 'upi://pay?pa=nephro@upi&pn=NephroConsult&cu=INR',
+          qrValue: 'upi://pay?pa=nephroconsult@upi&pn=NephroConsult&cu=INR',
           razorpayEnabled: false,
           stripeEnabled: false
         },
         subscriptionPlan: 'Professional',
         subscriptionStatus: 'Active',
         providers: {
-          booking: { type: 'external', config: { webhookUrl: 'http://localhost:5001/api/mock-external', apiKey: 'nc_key_99' } },
-          payment: { type: 'external', config: { webhookUrl: 'http://localhost:5001/api/mock-external', apiKey: 'nc_key_99' } },
-          region: { type: 'external', config: { webhookUrl: 'http://localhost:5001/api/mock-external', apiKey: 'nc_key_99', defaultRegion: { country: 'IN', currency: 'INR', timezone: 'Asia/Kolkata' } } },
-          consultation: { type: 'external', config: { webhookUrl: 'http://localhost:5001/api/mock-external', apiKey: 'nc_key_99' } },
-          auth: { type: 'external', config: { webhookUrl: 'http://localhost:5001/api/mock-external', apiKey: 'nc_key_99' } },
-          document: { type: 'external', config: { webhookUrl: 'http://localhost:5001/api/mock-external', apiKey: 'nc_key_99' } },
-          notification: { type: 'external', config: { webhookUrl: 'http://localhost:5001/api/mock-external', apiKey: 'nc_key_99' } },
-          knowledge: { type: 'external', config: { webhookUrl: 'http://localhost:5001/api/mock-external', apiKey: 'nc_key_99' } }
+          booking: { type: 'internal', config: {} },
+          payment: { type: 'internal', config: {} },
+          region: { type: 'internal', config: { defaultCountry: 'IN', defaultCurrency: 'INR', defaultTimezone: 'Asia/Kolkata' } },
+          consultation: { type: 'internal', config: {} },
+          auth: { type: 'internal', config: {} },
+          document: { type: 'internal', config: {} },
+          notification: { type: 'internal', config: {} },
+          knowledge: { type: 'internal', config: {} }
         }
       });
       await nephro.save();
