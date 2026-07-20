@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Send, Mic, MicOff, Volume2, VolumeX, Calendar, RefreshCw, X,
+  Send, Mic, MicOff, Volume2, VolumeX, Calendar, RefreshCw, X, Shield,
   MessageSquare, AlertCircle, Upload, FileText, CheckCircle, CreditCard, Sparkles, Phone, Globe, ChevronRight, Loader2
 } from 'lucide-react';
 import API from '../utils/api';
