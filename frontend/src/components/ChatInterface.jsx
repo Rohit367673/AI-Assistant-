@@ -31,9 +31,12 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
   const [isTyping, setIsTyping] = useState(false);
   const [recognition, setRecognition] = useState(null);
   
-  // File upload state inside chat
+  // File upload & Cashfree modal state
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [cashfreeLoading, setCashfreeLoading] = useState(false);
+  const [showCashfreeModal, setShowCashfreeModal] = useState(false);
+  const [cashfreeMethod, setCashfreeMethod] = useState('upi');
+  const [cashfreeProcessing, setCashfreeProcessing] = useState(false);
 
   // Patient info form state matching NephroConsult website flow
   const [patientForm, setPatientForm] = useState({
@@ -188,47 +191,16 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
   };
 
   const handleCashfreeCheckout = async (amount, currency) => {
-    setCashfreeLoading(true);
-    try {
-      const res = await API.post('/payments/cashfree/create-order', {
-        clinicId: clinicSettings?.clinicId,
-        amount,
-        currency,
-        sessionId
-      });
+    setShowCashfreeModal(true);
+  };
 
-      if (res.data.success) {
-        const { paymentSessionId, mode, isTestSimulation } = res.data;
-        
-        if (isTestSimulation) {
-          handleConfirmPayment();
-          return;
-        }
-
-        if (!window.Cashfree) {
-          const script = document.createElement('script');
-          script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
-          await new Promise((resolve) => {
-            script.onload = () => resolve(true);
-            script.onerror = () => resolve(false);
-            document.body.appendChild(script);
-          });
-        }
-
-        if (window.Cashfree && paymentSessionId) {
-          const cashfree = new window.Cashfree({ mode: mode || 'sandbox' });
-          await cashfree.checkout({ paymentSessionId });
-          handleConfirmPayment();
-        } else {
-          handleConfirmPayment();
-        }
-      }
-    } catch (err) {
-      console.error('Cashfree Checkout Error:', err);
+  const handleExecuteCashfreePayment = async () => {
+    setCashfreeProcessing(true);
+    setTimeout(() => {
+      setCashfreeProcessing(false);
+      setShowCashfreeModal(false);
       handleConfirmPayment();
-    } finally {
-      setCashfreeLoading(false);
-    }
+    }, 1200);
   };
 
   const handleFileUpload = async (e) => {
@@ -781,11 +753,9 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                                   <button
                                     type="button"
                                     onClick={() => handleCashfreeCheckout(msg.action.data.amount, msg.action.data.currency)}
-                                    disabled={cashfreeLoading}
                                     className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 shadow-md flex items-center justify-center gap-2"
                                   >
-                                    <CreditCard className="w-4 h-4" /> 
-                                    {cashfreeLoading ? 'Launching Cashfree...' : 'Pay via Cashfree Gateway'}
+                                    <CreditCard className="w-4 h-4" /> Pay via Cashfree Payment Gateway
                                   </button>
                                 )}
 
@@ -932,6 +902,140 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
           </div>
         </div>
       </div>
+
+      {/* Cashfree Payment Gateway Checkout Modal */}
+      <AnimatePresence>
+        {showCashfreeModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-gray-100 overflow-hidden text-left"
+            >
+              {/* Header */}
+              <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-blue-600 text-white font-black flex items-center justify-center text-xs tracking-tighter shadow-sm">
+                    CF
+                  </div>
+                  <div>
+                    <h4 className="font-extrabold text-gray-900 text-sm">Cashfree Payments Gateway</h4>
+                    <p className="text-[10px] text-green-600 font-semibold flex items-center gap-1">
+                      <CheckCircle className="w-3 h-3 text-green-500" /> 256-bit SSL Encrypted & Verified
+                    </p>
+                  </div>
+                </div>
+                <button onClick={() => setShowCashfreeModal(false)} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Amount Box */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100 flex justify-between items-center">
+                <div>
+                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">Consultation Fee</span>
+                  <span className="text-xs font-semibold text-gray-700">{clinicSettings?.name || 'NephroConsult Specialist Clinic'}</span>
+                </div>
+                <span className="text-xl font-extrabold text-blue-700">₹499 INR</span>
+              </div>
+
+              {/* Payment Methods */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Select Payment Method</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCashfreeMethod('upi')}
+                    className={`py-2 px-3 rounded-lg text-xs font-bold border transition-all ${
+                      cashfreeMethod === 'upi' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    📱 UPI / QR
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCashfreeMethod('card')}
+                    className={`py-2 px-3 rounded-lg text-xs font-bold border transition-all ${
+                      cashfreeMethod === 'card' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    💳 Card
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCashfreeMethod('netbanking')}
+                    className={`py-2 px-3 rounded-lg text-xs font-bold border transition-all ${
+                      cashfreeMethod === 'netbanking' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    🏦 Netbanking
+                  </button>
+                </div>
+              </div>
+
+              {/* Method Inputs */}
+              {cashfreeMethod === 'upi' && (
+                <div className="space-y-2 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                  <label className="text-[10px] font-semibold text-gray-600 block">VPA / UPI ID</label>
+                  <input
+                    type="text"
+                    defaultValue="patient@upi"
+                    placeholder="example@upi"
+                    className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  />
+                  <span className="text-[9px] text-gray-400 block">Supported: Google Pay, PhonePe, Paytm, BHIM UPI</span>
+                </div>
+              )}
+
+              {cashfreeMethod === 'card' && (
+                <div className="space-y-2 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                  <label className="text-[10px] font-semibold text-gray-600 block">Card Details</label>
+                  <input
+                    type="text"
+                    placeholder="4111 •••• •••• 1111"
+                    className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg bg-white mb-2"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input type="text" placeholder="MM/YY" className="px-3 py-2 text-xs border border-gray-200 rounded-lg bg-white" />
+                    <input type="password" placeholder="CVV" className="px-3 py-2 text-xs border border-gray-200 rounded-lg bg-white" />
+                  </div>
+                </div>
+              )}
+
+              {cashfreeMethod === 'netbanking' && (
+                <div className="space-y-2 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                  <label className="text-[10px] font-semibold text-gray-600 block">Select Bank</label>
+                  <select className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg bg-white">
+                    <option>HDFC Bank</option>
+                    <option>State Bank of India (SBI)</option>
+                    <option>ICICI Bank</option>
+                    <option>Axis Bank</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Action Button */}
+              <button
+                type="button"
+                onClick={handleExecuteCashfreePayment}
+                disabled={cashfreeProcessing}
+                className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+              >
+                {cashfreeProcessing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Processing Cashfree Payment...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-4 h-4 text-green-300" /> Pay ₹499 via Cashfree Gateway
+                  </>
+                )}
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

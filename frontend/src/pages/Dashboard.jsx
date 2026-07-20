@@ -24,6 +24,9 @@ export default function Dashboard() {
   const handleLogout = () => {
     localStorage.removeItem('clinicToken');
     localStorage.removeItem('clinicId');
+    localStorage.removeItem('mock_user');
+    localStorage.removeItem('nephro_user');
+    sessionStorage.clear();
     navigate('/login');
   };
 

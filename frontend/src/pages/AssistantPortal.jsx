@@ -53,16 +53,21 @@ export default function AssistantPortal() {
   const handleGoogleLogin = () => {
     const mockUser = {
       name: 'Rohit',
-      email: 'rohit@gmail.com',
+      email: 'rohit367673@gmail.com',
       avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&h=80',
       token: 'mock_google_oauth_token_36767'
     };
     localStorage.setItem('mock_user', JSON.stringify(mockUser));
+    localStorage.setItem('nephro_user', JSON.stringify(mockUser));
     setUser(mockUser);
   };
 
   const handleSignOut = () => {
     localStorage.removeItem('mock_user');
+    localStorage.removeItem('nephro_user');
+    localStorage.removeItem('clinicToken');
+    localStorage.removeItem('clinicId');
+    sessionStorage.clear();
     setUser(null);
   };
 
