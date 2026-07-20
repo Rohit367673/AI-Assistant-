@@ -35,9 +35,15 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [cashfreeLoading, setCashfreeLoading] = useState(false);
 
-  // Patient info form state for booking flow
+  // Patient info form state matching NephroConsult website flow
   const [patientForm, setPatientForm] = useState({
-    firstName: '', lastName: '', email: '', phone: '', country: 'IN'
+    fullName: '',
+    email: '',
+    phone: '',
+    age: '',
+    gender: 'Male',
+    medicalHistory: '',
+    medications: ''
   });
 
   const messagesEndRef = useRef(null);
@@ -164,12 +170,17 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
   };
 
   const handleSubmitPatientInfo = () => {
-    const { firstName, lastName, email, phone, country } = patientForm;
-    if (!firstName.trim() || !email.trim() || !phone.trim()) {
-      alert('Please fill in all required fields (First Name, Email, Phone)');
-      return;
+    const { fullName, email, phone, age, gender, medicalHistory, medications } = patientForm;
+    if (!fullName.trim()) return alert('Please enter your Full Name.');
+    if (!email.trim()) return alert('Please enter your Email Address.');
+    if (!phone.trim()) return alert('Please enter your Phone Number.');
+    if (!age.trim()) return alert('Please enter your Age.');
+    if (!medicalHistory.trim() || medicalHistory.trim().length < 10) {
+      return alert('Please describe your Medical History & Current Symptoms (minimum 10 characters).');
     }
-    handleSendMessage(null, `[Patient Info: ${firstName}|${lastName}|${email}|${phone}|${country}]`);
+    const cleanHistory = medicalHistory.replace(/\|/g, ' ');
+    const cleanMeds = (medications || '').replace(/\|/g, ' ');
+    handleSendMessage(null, `[Patient Info: ${fullName}|${email}|${phone}|${age}|${gender}|${cleanHistory}|${cleanMeds}]`);
   };
 
   const handleConfirmPayment = () => {
@@ -567,20 +578,36 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                               </div>
                             )}
 
-                            {/* 2. Swipeable Date picker row */}
+                            {/* 2. Month Calendar Date Picker — NephroConsult style */}
                             {msg.action.type === 'select_date' && (
-                              <div className="flex gap-2 overflow-x-auto pb-1">
-                                {nextDays.map((day, dIdx) => (
-                                  <button
-                                    key={dIdx}
-                                    type="button"
-                                    onClick={() => handleSelectDate(day.dateStr)}
-                                    className="flex-shrink-0 flex flex-col items-center bg-white border border-gray-200 px-3 py-2 rounded-xl text-center min-w-[54px] hover:bg-gray-50 hover:border-primary transition-all active:scale-95 shadow-sm group"
-                                  >
-                                    <span className="text-[9px] text-gray-500 uppercase font-medium group-hover:text-primary">{day.dayName}</span>
-                                    <span className="text-sm font-extrabold text-gray-800 group-hover:text-primary">{day.dayNum}</span>
-                                  </button>
-                                ))}
+                              <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3 shadow-sm">
+                                <div className="text-[11px] bg-indigo-50/70 border border-indigo-100 p-2.5 rounded-lg text-gray-700 flex items-center gap-2">
+                                  <Globe className="w-4 h-4 text-primary flex-shrink-0" />
+                                  <span>Regular consultations: <b>6-10 PM IST</b> • Times converted to your local timezone</span>
+                                </div>
+                                <div className="text-[10px] text-gray-500 italic bg-gray-50 p-2 rounded-md">
+                                  ⚠️ Same-day booking is only available for Urgent Consultations. Please select a future date or upgrade to Urgent Consultation.
+                                </div>
+                                
+                                <div className="border border-gray-200 rounded-xl overflow-hidden">
+                                  <div className="bg-gray-50 p-2.5 flex justify-between items-center border-b border-gray-200">
+                                    <span className="text-xs font-bold text-gray-800">Available Consultation Dates</span>
+                                    <span className="text-[10px] text-gray-500 font-medium">Click to select date</span>
+                                  </div>
+                                  <div className="p-2 grid grid-cols-4 sm:grid-cols-7 gap-1.5 max-h-60 overflow-y-auto">
+                                    {nextDays.map((day, dIdx) => (
+                                      <button
+                                        key={dIdx}
+                                        type="button"
+                                        onClick={() => handleSelectDate(day.dateStr)}
+                                        className="flex flex-col items-center justify-center p-2 rounded-lg border border-gray-200 hover:border-primary hover:bg-primary/5 transition-all group active:scale-95"
+                                      >
+                                        <span className="text-[9px] font-semibold text-gray-400 group-hover:text-primary uppercase">{day.dayName}</span>
+                                        <span className="text-sm font-extrabold text-gray-800 group-hover:text-primary">{day.dayNum}</span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
                               </div>
                             )}
 
@@ -600,73 +627,121 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                               </div>
                             )}
 
-                            {/* 4. Patient Info Collection Form */}
+                            {/* 4. NephroConsult Patient Information Form */}
                             {msg.action.type === 'collect_patient_info' && (
-                              <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3 shadow-sm">
-                                <div className="grid grid-cols-2 gap-3">
+                              <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3 shadow-sm text-left">
+                                <p className="text-[11px] text-gray-500 font-medium pb-1 border-b border-gray-100">
+                                  All fields are required except Current Medications and Document Upload
+                                </p>
+
+                                {/* Full Name & Email */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                   <div>
-                                    <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider block mb-1">First Name *</label>
+                                    <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-1">Full Name *</label>
                                     <input
                                       type="text"
-                                      value={patientForm.firstName}
-                                      onChange={(e) => setPatientForm(prev => ({ ...prev, firstName: e.target.value }))}
-                                      placeholder="John"
+                                      value={patientForm.fullName}
+                                      onChange={(e) => setPatientForm(prev => ({ ...prev, fullName: e.target.value }))}
+                                      placeholder="Full Name"
                                       className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-gray-50"
                                     />
                                   </div>
                                   <div>
-                                    <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider block mb-1">Last Name</label>
+                                    <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-1">Email Address *</label>
                                     <input
-                                      type="text"
-                                      value={patientForm.lastName}
-                                      onChange={(e) => setPatientForm(prev => ({ ...prev, lastName: e.target.value }))}
-                                      placeholder="Doe"
+                                      type="email"
+                                      value={patientForm.email}
+                                      onChange={(e) => setPatientForm(prev => ({ ...prev, email: e.target.value }))}
+                                      placeholder="email@example.com"
                                       className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-gray-50"
                                     />
                                   </div>
                                 </div>
+
+                                {/* Phone, Age, Gender */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                  <div className="md:col-span-1">
+                                    <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-1">Phone Number *</label>
+                                    <input
+                                      type="tel"
+                                      value={patientForm.phone}
+                                      onChange={(e) => setPatientForm(prev => ({ ...prev, phone: e.target.value }))}
+                                      placeholder="Enter phone (7-15 digits)"
+                                      className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-gray-50"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-1">Age *</label>
+                                    <input
+                                      type="number"
+                                      value={patientForm.age}
+                                      onChange={(e) => setPatientForm(prev => ({ ...prev, age: e.target.value }))}
+                                      placeholder="Enter your age"
+                                      className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-gray-50"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-1">Gender *</label>
+                                    <select
+                                      value={patientForm.gender}
+                                      onChange={(e) => setPatientForm(prev => ({ ...prev, gender: e.target.value }))}
+                                      className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-gray-50"
+                                    >
+                                      <option value="Male">Male</option>
+                                      <option value="Female">Female</option>
+                                      <option value="Other">Other</option>
+                                    </select>
+                                  </div>
+                                </div>
+
+                                {/* Medical History & Current Symptoms */}
                                 <div>
-                                  <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider block mb-1">Email Address *</label>
-                                  <input
-                                    type="email"
-                                    value={patientForm.email}
-                                    onChange={(e) => setPatientForm(prev => ({ ...prev, email: e.target.value }))}
-                                    placeholder="john@example.com"
+                                  <div className="flex justify-between items-center mb-1">
+                                    <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider">Medical History & Current Symptoms *</label>
+                                    <span className="text-[9px] text-gray-400">Characters: {patientForm.medicalHistory.length}/2000</span>
+                                  </div>
+                                  <textarea
+                                    rows={3}
+                                    value={patientForm.medicalHistory}
+                                    onChange={(e) => setPatientForm(prev => ({ ...prev, medicalHistory: e.target.value }))}
+                                    placeholder="Please describe your current symptoms, relevant medical history, and any concerns you'd like to discuss (minimum 10 characters)..."
                                     className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-gray-50"
                                   />
                                 </div>
+
+                                {/* Current Medications (Optional) */}
                                 <div>
-                                  <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider block mb-1">Phone Number *</label>
-                                  <input
-                                    type="tel"
-                                    value={patientForm.phone}
-                                    onChange={(e) => setPatientForm(prev => ({ ...prev, phone: e.target.value }))}
-                                    placeholder="+91 98765 43210"
+                                  <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-1">Current Medications (Optional)</label>
+                                  <textarea
+                                    rows={2}
+                                    value={patientForm.medications}
+                                    onChange={(e) => setPatientForm(prev => ({ ...prev, medications: e.target.value }))}
+                                    placeholder="List any medications you're currently taking..."
                                     className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-gray-50"
                                   />
                                 </div>
+
+                                {/* Upload Medical Documents (Optional) */}
                                 <div>
-                                  <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider block mb-1">Country</label>
-                                  <select
-                                    value={patientForm.country}
-                                    onChange={(e) => setPatientForm(prev => ({ ...prev, country: e.target.value }))}
-                                    className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-gray-50"
-                                  >
-                                    {(msg.action.data?.countries || [
-                                      { code: 'IN', name: 'India' },
-                                      { code: 'US', name: 'United States' },
-                                      { code: 'GB', name: 'United Kingdom' },
-                                      { code: 'AE', name: 'UAE' },
-                                      { code: 'AU', name: 'Australia' }
-                                    ]).map(c => (
-                                      <option key={c.code} value={c.code}>{c.name}</option>
-                                    ))}
-                                  </select>
+                                  <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-1">Upload Medical Documents (Optional) - Max 5 files</label>
+                                  <div className="border-2 border-dashed border-gray-200 rounded-xl p-3 text-center hover:border-primary transition-all relative bg-gray-50/50 flex flex-col items-center justify-center gap-1 cursor-pointer">
+                                    <input 
+                                      type="file" 
+                                      accept=".pdf,.jpg,.jpeg,.png,.docx" 
+                                      onChange={handleFileUpload} 
+                                      disabled={uploadingDoc}
+                                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+                                    />
+                                    <Upload className="w-5 h-5 text-gray-400" />
+                                    <span className="text-[11px] font-semibold text-gray-700">Drag & drop your files or click to browse</span>
+                                    <span className="text-[9px] text-gray-400">Support: PDF, JPG, PNG files up to 10MB each</span>
+                                  </div>
                                 </div>
+
                                 <button
                                   type="button"
                                   onClick={handleSubmitPatientInfo}
-                                  className="w-full py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 shadow-md flex items-center justify-center gap-2"
+                                  className="w-full py-3 bg-primary hover:bg-primary/90 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 shadow-md flex items-center justify-center gap-2 mt-2"
                                 >
                                   <ChevronRight className="w-4 h-4" /> Continue to Payment
                                 </button>

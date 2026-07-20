@@ -297,19 +297,22 @@ router.post('/', async (req, res) => {
         const requiredDocs = selectedPlanObj?.requiredDocuments || [];
         const hasRequiredDocs = requiredDocs.length > 0;
 
-        // Parse patient info from the tag: "FirstName|LastName|Email|Phone|Country"
+        // Parse patient info from tag: "FullName|Email|Phone|Age|Gender|MedicalHistory|Medications"
         const infoParts = matchPatientInfo.split('|');
-        const pFirstName = infoParts[0] || '';
-        const pLastName = infoParts[1] || '';
-        const pEmail = infoParts[2] || patientEmail || '';
-        const pPhone = infoParts[3] || patientPhone || '';
-        const pCountry = infoParts[4] || region.country || 'IN';
-        const pFullName = `${pFirstName} ${pLastName}`.trim();
+        const pFullName = infoParts[0] || 'Patient';
+        const pEmail = infoParts[1] || patientEmail || 'patient@example.com';
+        const pPhone = infoParts[2] || patientPhone || '+919999999999';
+        const pAge = infoParts[3] || '';
+        const pGender = infoParts[4] || 'Male';
+        const pHistory = infoParts[5] || '';
+        const pMedications = infoParts[6] || '';
         
         // Override extracted info with form data
         if (pEmail) patientEmail = pEmail;
         if (pPhone) patientPhone = pPhone;
         if (pFullName) patientName = pFullName;
+
+        const pNotes = `Medical History: ${pHistory}${pMedications ? ` | Medications: ${pMedications}` : ''} | Age: ${pAge}, Gender: ${pGender}`;
 
         // Step 5: Document Upload (if plan requires it)
         if (hasRequiredDocs && !hasUploaded) {
@@ -324,7 +327,7 @@ router.post('/', async (req, res) => {
           const currencySymbol = (currency === 'INR' || currency === 'inr') ? '₹' : '$';
           const qrCode = `upi://pay?pa=nephroconsult@upi&pn=NephroConsult&am=${amount}&cu=${currency}`;
           
-          enforcedReply = `✅ Booking Summary:\n• **Plan:** ${planName}\n• **Date:** ${matchDate}\n• **Time:** ${matchSlot}\n• **Patient:** ${pFullName}\n• **Email:** ${pEmail}\n\nPlease complete the payment of **${currencySymbol}${amount}** to confirm:`;
+          enforcedReply = `✅ Booking Summary:\n• **Plan:** ${planName}\n• **Date:** ${matchDate}\n• **Time:** ${matchSlot}\n• **Patient:** ${pFullName}\n• **Email:** ${pEmail}\n\nPlease complete the fee payment of **${currencySymbol}${amount}** to confirm:`;
           enforcedAction = {
             type: 'payment_checkout',
             data: { 
@@ -352,8 +355,8 @@ router.post('/', async (req, res) => {
             consultationType: plan,
             date,
             time: slot,
-            country: pCountry || region.country || 'IN',
-            notes: `Conversational Booking confirmed via AI Doctor. Plan: ${plan}`,
+            country: region.country || 'IN',
+            notes: pNotes,
             paymentProvider: 'UPI',
             paymentStatus: 'Paid',
             amount
