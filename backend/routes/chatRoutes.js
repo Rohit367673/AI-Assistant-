@@ -116,9 +116,14 @@ router.post('/', async (req, res) => {
       }
     };
 
-    // Deterministic state machine checks for booking flow
+    // ═══════════════════════════════════════════════════════════════
+    // BOOKING STATE MACHINE — mirrors NephroConsult website flow
+    // Step 1: Select Plan → Step 2: Pick Date → Step 3: Pick Slot
+    // → Step 4: Patient Info → Step 5: Upload Docs (if needed)
+    // → Step 6: Payment → Step 7: Confirm & Book
+    // ═══════════════════════════════════════════════════════════════
     const lastMsgLower = message.toLowerCase();
-    const hasBookKeyword = lastMsgLower.includes('book') || lastMsgLower.includes('appointment') || lastMsgLower.includes('schedule') || lastMsgLower.includes('slot');
+    const hasBookKeyword = lastMsgLower.includes('book') || lastMsgLower.includes('appointment') || lastMsgLower.includes('schedule') || lastMsgLower.includes('consult');
     
     const getLastMatch = (str, regexPattern) => {
       if (!str) return null;
@@ -126,51 +131,71 @@ router.post('/', async (req, res) => {
       return matches.length > 0 ? matches[matches.length - 1] : null;
     };
 
-    const matchPlan = getLastMatch(message, /\[Selected Plan:\s*([^\]]+)\]/) || getLastMatch(historyTextStr, /\[Selected Plan:\s*([^\]]+)\]/);
-    const matchDate = getLastMatch(message, /\[Selected Date:\s*([^\]]+)\]/) || getLastMatch(historyTextStr, /\[Selected Date:\s*([^\]]+)\]/);
-    const matchSlot = getLastMatch(message, /\[Selected Slot:\s*([^\]]+)\]/) || getLastMatch(historyTextStr, /\[Selected Slot:\s*([^\]]+)\]/);
-    const hasUploaded = historyTextStr.includes('[Uploaded Document:') || message.includes('[Uploaded Document:');
+    // Detect if this is a FRESH booking request (user typed "book", "appointment", etc.)
+    // vs a continuation step (user clicked a widget that sends [Selected Plan: ...] etc.)
+    const isContinuationStep = message.startsWith('[Selected Plan:') || 
+                                message.startsWith('[Selected Date:') || 
+                                message.startsWith('[Selected Slot:') || 
+                                message.startsWith('[Patient Info:') ||
+                                message.startsWith('[Uploaded Document:') || 
+                                message.startsWith('[Confirm Payment');
     
-    // IMPORTANT: Only check for confirmed payment in the CURRENT message, not old history.
-    // If the user just selected a new slot (e.g. after a booking failure), they need to pay again.
-    const isCurrentMsgNewSlot = message.startsWith('[Selected Slot:');
-    const isCurrentMsgNewDate = message.startsWith('[Selected Date:');
-    const isCurrentMsgConfirmPayment = lastMsgLower.includes('confirm payment') || lastMsgLower.includes('[confirm payment') || lastMsgLower.includes('verify') || lastMsgLower.includes('paid');
+    const isNewBookingRequest = hasBookKeyword && !isContinuationStep;
+
+    // For a NEW booking → ignore all history matches, start fresh from Step 1
+    // For a continuation → use history to know where we are
+    const matchPlan = isNewBookingRequest ? null : (getLastMatch(message, /\[Selected Plan:\s*([^\]]+)\]/) || getLastMatch(historyTextStr, /\[Selected Plan:\s*([^\]]+)\]/));
+    const matchDate = isNewBookingRequest ? null : (getLastMatch(message, /\[Selected Date:\s*([^\]]+)\]/) || getLastMatch(historyTextStr, /\[Selected Date:\s*([^\]]+)\]/));
+    const matchSlot = isNewBookingRequest ? null : (getLastMatch(message, /\[Selected Slot:\s*([^\]]+)\]/) || getLastMatch(historyTextStr, /\[Selected Slot:\s*([^\]]+)\]/));
+    const matchPatientInfo = isNewBookingRequest ? null : (getLastMatch(message, /\[Patient Info:\s*([^\]]+)\]/) || getLastMatch(historyTextStr, /\[Patient Info:\s*([^\]]+)\]/));
+    const hasUploaded = isNewBookingRequest ? false : (historyTextStr.includes('[Uploaded Document:') || message.includes('[Uploaded Document:'));
     
     // Payment is only confirmed if the CURRENT message is the confirmation action
-    // (not from old history where a previous attempt may have failed)
-    const hasConfirmedPayment = isCurrentMsgConfirmPayment && !isCurrentMsgNewSlot && !isCurrentMsgNewDate;
+    const isCurrentMsgNewSlot = message.startsWith('[Selected Slot:');
+    const isCurrentMsgConfirmPayment = lastMsgLower.includes('confirm payment') || lastMsgLower.includes('[confirm payment') || lastMsgLower.includes('verify') || lastMsgLower.includes('paid');
+    const hasConfirmedPayment = isCurrentMsgConfirmPayment && !isCurrentMsgNewSlot;
 
     let enforcedReply = null;
     let enforcedAction = null;
 
-    // Only enforce state machine if user is actively initiating or advancing booking actions
-    const isActivelyBooking = hasBookKeyword || 
-                              message.startsWith('[Selected Plan:') || 
-                              message.startsWith('[Selected Date:') || 
-                              message.startsWith('[Selected Slot:') || 
-                              message.startsWith('[Uploaded Document:') || 
-                              message.startsWith('[Confirm Payment') ||
-                              lastMsgLower.includes('verify') || 
-                              lastMsgLower.includes('confirm') || 
-                              lastMsgLower.includes('paid');
+    // Only enforce state machine if user is actively in the booking flow
+    const isActivelyBooking = isNewBookingRequest || isContinuationStep ||
+                              (hasBookKeyword && (matchPlan || matchDate || matchSlot)) ||
+                              (isCurrentMsgConfirmPayment);
 
     if (isActivelyBooking) {
-      // Step 1: Choose Plan
+
+      // ── Step 1: Choose Consultation Plan ──
       if (!matchPlan) {
-        enforcedReply = "I would be happy to help you schedule your appointment. Please select one of our clinic consultation plans below:";
-        enforcedAction = { type: 'select_plan', data: {} };
+        const planCards = plans.map(p => ({
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          duration: p.duration,
+          price: p.price,
+          currency: p.currency || 'INR',
+          symbol: p.symbol || (p.currency === 'INR' ? '₹' : '$'),
+          benefits: p.benefits || []
+        }));
+        enforcedReply = "I'd be happy to help you schedule your appointment! 🩺\n\nPlease select the type of consultation you'd like to book:";
+        enforcedAction = { type: 'select_plan', data: { plans: planCards } };
       } 
-      // Step 2: Choose Date
+
+      // ── Step 2: Choose Date ──
       else if (!matchDate) {
         const planName = matchPlan[1];
-        enforcedReply = `Thank you for selecting the **${planName}**. To proceed, please pick your preferred appointment date from the strip below:`;
+        const selectedPlanObj = plans.find(p => p.name.toLowerCase() === planName.toLowerCase() || p.id.toLowerCase() === planName.toLowerCase());
+        const price = selectedPlanObj ? (selectedPlanObj.price || selectedPlanObj.fee) : '';
+        const currency = selectedPlanObj?.currency || 'INR';
+        const symbol = currency === 'INR' ? '₹' : '$';
+        enforcedReply = `Great choice! You've selected **${planName}** (${symbol}${price}).\n\n📅 Please select your preferred appointment date:`;
         enforcedAction = { type: 'select_date', data: {} };
       } 
-      // Step 3: Choose Time Slot
-      else if (!matchSlot || isCurrentMsgNewDate) {
+
+      // ── Step 3: Choose Time Slot ──
+      else if (!matchSlot) {
         const chosenDate = matchDate[1];
-        let slots = ["09:00 AM", "10:00 AM", "11:00 AM", "02:00 PM", "03:00 PM", "04:00 PM"];
+        let slots = ["09:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "02:00 PM", "03:00 PM", "04:00 PM", "05:00 PM"];
         try {
           const liveSlots = await registry.booking.getAvailableSlots(clinicId, chosenDate);
           if (liveSlots && liveSlots.length > 0) slots = liveSlots;
@@ -178,12 +203,12 @@ router.post('/', async (req, res) => {
           console.warn('Failed to query slots provider, using mock list.', e.message);
         }
 
-        let slotMessage = `Excellent. Here are the available timeslots for **${chosenDate}** (in clinic timezone IST, GMT+5:30). Please choose a slot time:`;
+        let slotMessage = `📅 Date selected: **${chosenDate}**\n\n⏰ Here are the available time slots. Please choose one:`;
         if (region.timezone && !region.timezone.toLowerCase().includes('kolkata')) {
-          slotMessage = `Excellent. Here are the available timeslots for **${chosenDate}** in India Time (IST). Since you are located in **${region.timezone}**, we have converted the doctor's available times to your local timezone below:\n\n`;
+          slotMessage = `📅 Date selected: **${chosenDate}**\n\n⏰ Available slots (Doctor's IST timezone).\nYour timezone: **${region.timezone}**\n\n`;
           const timezoneConvertedSlots = slots.map(slot => {
             const converted = convertISTToLocal(slot, region.timezone);
-            return converted ? `- **${slot} IST** (which is **${converted}** your local time)` : `- **${slot} IST**`;
+            return converted ? `• **${slot} IST** → **${converted}** your time` : `• **${slot} IST**`;
           }).join('\n');
           slotMessage += timezoneConvertedSlots + `\n\nPlease select your preferred slot:`;
         }
@@ -191,25 +216,60 @@ router.post('/', async (req, res) => {
         enforcedReply = slotMessage;
         enforcedAction = { type: 'select_slot', data: { slots } };
       } 
-      // Step 4: Check Document Upload constraints, Payment, or Booking
+
+      // ── Step 4: Collect Patient Information ──
+      else if (!matchPatientInfo) {
+        enforcedReply = `⏰ Time slot selected: **${matchSlot[1]}**\n\n👤 Please fill in your details to proceed with the booking:`;
+        enforcedAction = { type: 'collect_patient_info', data: {
+          countries: [
+            { code: 'IN', name: 'India', currency: 'INR', symbol: '₹' },
+            { code: 'US', name: 'United States', currency: 'USD', symbol: '$' },
+            { code: 'GB', name: 'United Kingdom', currency: 'GBP', symbol: '£' },
+            { code: 'AE', name: 'UAE', currency: 'AED', symbol: 'AED' },
+            { code: 'AU', name: 'Australia', currency: 'AUD', symbol: 'AU$' },
+            { code: 'CA', name: 'Canada', currency: 'CAD', symbol: 'CA$' },
+            { code: 'SG', name: 'Singapore', currency: 'SGD', symbol: 'S$' },
+            { code: 'DE', name: 'Germany', currency: 'EUR', symbol: '€' },
+            { code: 'SA', name: 'Saudi Arabia', currency: 'SAR', symbol: 'SAR' }
+          ]
+        }};
+      }
+
+      // ── Steps 5-7: Docs → Payment → Book ──
       else {
         const planName = matchPlan[1];
         const selectedPlanObj = plans.find(p => p.name.toLowerCase() === planName.toLowerCase() || p.id.toLowerCase() === planName.toLowerCase());
         const requiredDocs = selectedPlanObj?.requiredDocuments || [];
         const hasRequiredDocs = requiredDocs.length > 0;
+
+        // Parse patient info from the tag: "FirstName|LastName|Email|Phone|Country"
+        const infoParts = matchPatientInfo[1].split('|');
+        const pFirstName = infoParts[0] || '';
+        const pLastName = infoParts[1] || '';
+        const pEmail = infoParts[2] || patientEmail || '';
+        const pPhone = infoParts[3] || patientPhone || '';
+        const pCountry = infoParts[4] || region.country || 'IN';
+        const pFullName = `${pFirstName} ${pLastName}`.trim();
         
+        // Override extracted info with form data
+        if (pEmail) patientEmail = pEmail;
+        if (pPhone) patientPhone = pPhone;
+        if (pFullName) patientName = pFullName;
+
+        // Step 5: Document Upload (if plan requires it)
         if (hasRequiredDocs && !hasUploaded) {
-          enforcedReply = `Since you selected a **${planName}**, Dr. Patel requires you to upload your **${requiredDocs.join(', ')}** before the session. Please click below to upload:`;
+          enforcedReply = `Thank you, **${pFullName}**! 📋\n\nSince you selected **${planName}**, please upload your **${requiredDocs.join(', ')}** before the session:`;
           enforcedAction = { type: 'upload_document', data: { requiredDocuments: requiredDocs } };
         } 
-        // Step 5: Payment Checkout — show payment if user just picked a new slot OR hasn't confirmed payment yet
+
+        // Step 6: Payment Checkout
         else if (!hasConfirmedPayment || isCurrentMsgNewSlot) {
           const amount = selectedPlanObj ? (selectedPlanObj.price || selectedPlanObj.fee) : 499;
           const currency = selectedPlanObj?.currency || region?.currency || clinic.providers?.region?.config?.defaultCurrency || 'INR';
           const currencySymbol = (currency === 'INR' || currency === 'inr') ? '₹' : '$';
           const qrCode = `upi://pay?pa=nephroconsult@upi&pn=NephroConsult&am=${amount}&cu=${currency}`;
           
-          enforcedReply = `Your appointment is set for **${matchDate[1]}** at **${matchSlot[1]}**. Please complete the fee payment of **${currencySymbol}${amount}** below:`;
+          enforcedReply = `✅ Booking Summary:\n• **Plan:** ${planName}\n• **Date:** ${matchDate[1]}\n• **Time:** ${matchSlot[1]}\n• **Patient:** ${pFullName}\n• **Email:** ${pEmail}\n\nPlease complete the payment of **${currencySymbol}${amount}** to confirm:`;
           enforcedAction = {
             type: 'payment_checkout',
             data: { 
@@ -220,7 +280,8 @@ router.post('/', async (req, res) => {
             }
           };
         } 
-        // Step 6: Confirmation Receipt
+
+        // Step 7: Confirm & Book Appointment
         else {
           const date = matchDate[1];
           const slot = matchSlot[1];
@@ -230,13 +291,13 @@ router.post('/', async (req, res) => {
           // Trigger internal/external booking creation
           const bookingResult = await registry.booking.bookAppointment({
             clinicId,
-            patientName: patientName || 'Patient',
-            patientPhone: patientPhone || '+919999999999',
-            patientEmail: patientEmail || 'patient@example.com',
+            patientName: patientName || pFullName || 'Patient',
+            patientPhone: patientPhone || pPhone || '+919999999999',
+            patientEmail: patientEmail || pEmail || 'patient@example.com',
             consultationType: plan,
             date,
             time: slot,
-            country: region.country || 'IN',
+            country: pCountry || region.country || 'IN',
             notes: `Conversational Booking confirmed via AI Doctor. Plan: ${plan}`,
             paymentProvider: 'UPI',
             paymentStatus: 'Paid',
@@ -254,20 +315,20 @@ router.post('/', async (req, res) => {
             enforcedReply = `I apologize, but scheduling failed: **${bookingResult.message}**\n\nPlease select one of the available open time slots for **${date}** below:`;
             enforcedAction = { type: 'select_slot', data: { slots: freshSlots } };
           } else {
-            enforcedReply = `Congratulations! Your payment has been verified. Your appointment is confirmed and a receipt has been logged. You can review all details in your profile settings.`;
+            enforcedReply = `🎉 **Appointment Confirmed!**\n\nYour consultation has been successfully booked. A confirmation has been sent to **${patientEmail || pEmail}**.`;
             enforcedAction = {
               type: 'booking_confirm',
-              data: { plan, date, slot }
+              data: { plan, date, slot, patientName: patientName || pFullName, patientEmail: patientEmail || pEmail }
             };
 
             // Notify patient via simulated NotificationProvider
             try {
               await registry.notification.sendNotification(clinicId, {
                 type: 'email',
-                recipient: { email: patientEmail || 'patient@example.com', phone: patientPhone || '+919999999999' },
+                recipient: { email: patientEmail || pEmail || 'patient@example.com', phone: patientPhone || pPhone || '+919999999999' },
                 payload: {
                   subject: `Appointment Confirmed with ${clinic.doctorName}`,
-                  body: `Dear ${patientName || 'Patient'},\n\nYour consultation plan "${plan}" has been successfully booked for ${date} at ${slot}.\n\nThank you!`
+                  body: `Dear ${patientName || pFullName || 'Patient'},\n\nYour consultation plan "${plan}" has been successfully booked for ${date} at ${slot}.\n\nThank you!`
                 }
               });
             } catch (err) {

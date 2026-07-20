@@ -35,6 +35,11 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [cashfreeLoading, setCashfreeLoading] = useState(false);
 
+  // Patient info form state for booking flow
+  const [patientForm, setPatientForm] = useState({
+    firstName: '', lastName: '', email: '', phone: '', country: 'IN'
+  });
+
   const messagesEndRef = useRef(null);
   const synthRef = useRef(window.speechSynthesis);
   const utteranceRef = useRef(null);
@@ -156,6 +161,15 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
 
   const handleSelectSlot = (slotString) => {
     handleSendMessage(null, `[Selected Slot: ${slotString}]`);
+  };
+
+  const handleSubmitPatientInfo = () => {
+    const { firstName, lastName, email, phone, country } = patientForm;
+    if (!firstName.trim() || !email.trim() || !phone.trim()) {
+      alert('Please fill in all required fields (First Name, Email, Phone)');
+      return;
+    }
+    handleSendMessage(null, `[Patient Info: ${firstName}|${lastName}|${email}|${phone}|${country}]`);
   };
 
   const handleConfirmPayment = () => {
@@ -519,7 +533,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                             {/* 1. Plans select list — NephroConsult style cards */}
                             {msg.action.type === 'select_plan' && (
                               <div className="grid grid-cols-1 gap-3">
-                                {(clinicSettings.consultationTypes || fallbackPlans).map((plan, pIdx) => (
+                                {(msg.action.data?.plans || clinicSettings.consultationTypes || fallbackPlans).map((plan, pIdx) => (
                                   <button
                                     key={pIdx}
                                     type="button"
@@ -532,8 +546,8 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                                         <span className="text-[10px] text-gray-500">{plan.duration || 45} min</span>
                                       </div>
                                       <span className="text-sm font-extrabold text-primary flex items-center gap-1">
-                                        ₹{plan.fee || plan.price}
-                                        <span className="text-[9px] font-normal text-gray-400">INR</span>
+                                        {plan.symbol || '₹'}{plan.fee || plan.price}
+                                        <span className="text-[9px] font-normal text-gray-400">{plan.currency || 'INR'}</span>
                                       </span>
                                     </div>
                                     {plan.description && (
@@ -586,7 +600,80 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                               </div>
                             )}
 
-                            {/* 4. Drag-and-drop document upload block */}
+                            {/* 4. Patient Info Collection Form */}
+                            {msg.action.type === 'collect_patient_info' && (
+                              <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3 shadow-sm">
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider block mb-1">First Name *</label>
+                                    <input
+                                      type="text"
+                                      value={patientForm.firstName}
+                                      onChange={(e) => setPatientForm(prev => ({ ...prev, firstName: e.target.value }))}
+                                      placeholder="John"
+                                      className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-gray-50"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider block mb-1">Last Name</label>
+                                    <input
+                                      type="text"
+                                      value={patientForm.lastName}
+                                      onChange={(e) => setPatientForm(prev => ({ ...prev, lastName: e.target.value }))}
+                                      placeholder="Doe"
+                                      className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-gray-50"
+                                    />
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider block mb-1">Email Address *</label>
+                                  <input
+                                    type="email"
+                                    value={patientForm.email}
+                                    onChange={(e) => setPatientForm(prev => ({ ...prev, email: e.target.value }))}
+                                    placeholder="john@example.com"
+                                    className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-gray-50"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider block mb-1">Phone Number *</label>
+                                  <input
+                                    type="tel"
+                                    value={patientForm.phone}
+                                    onChange={(e) => setPatientForm(prev => ({ ...prev, phone: e.target.value }))}
+                                    placeholder="+91 98765 43210"
+                                    className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-gray-50"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider block mb-1">Country</label>
+                                  <select
+                                    value={patientForm.country}
+                                    onChange={(e) => setPatientForm(prev => ({ ...prev, country: e.target.value }))}
+                                    className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-gray-50"
+                                  >
+                                    {(msg.action.data?.countries || [
+                                      { code: 'IN', name: 'India' },
+                                      { code: 'US', name: 'United States' },
+                                      { code: 'GB', name: 'United Kingdom' },
+                                      { code: 'AE', name: 'UAE' },
+                                      { code: 'AU', name: 'Australia' }
+                                    ]).map(c => (
+                                      <option key={c.code} value={c.code}>{c.name}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={handleSubmitPatientInfo}
+                                  className="w-full py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 shadow-md flex items-center justify-center gap-2"
+                                >
+                                  <ChevronRight className="w-4 h-4" /> Continue to Payment
+                                </button>
+                              </div>
+                            )}
+
+                            {/* 5. Drag-and-drop document upload block */}
                             {msg.action.type === 'upload_document' && (
                               <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:border-primary transition-all relative bg-gray-50 flex flex-col items-center gap-2">
                                 <input 
@@ -668,6 +755,12 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                                   <p>🩺 Plan: <span className="font-semibold text-gray-900">{msg.action.data.plan}</span></p>
                                   <p>📅 Date: <span className="font-semibold text-gray-900">{msg.action.data.date}</span></p>
                                   <p>⏰ Time: <span className="font-semibold text-gray-900">{msg.action.data.slot}</span></p>
+                                  {msg.action.data.patientName && (
+                                    <p>👤 Patient: <span className="font-semibold text-gray-900">{msg.action.data.patientName}</span></p>
+                                  )}
+                                  {msg.action.data.patientEmail && (
+                                    <p>📧 Email: <span className="font-semibold text-gray-900">{msg.action.data.patientEmail}</span></p>
+                                  )}
                                 </div>
                                 <div className="text-[10px] text-gray-500 italic">
                                   Confirmation alert has been dispatched to your email/SMS.
