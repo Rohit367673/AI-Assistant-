@@ -191,7 +191,44 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
   };
 
   const handleCashfreeCheckout = async (amount, currency) => {
-    setShowCashfreeModal(true);
+    setCashfreeLoading(true);
+    try {
+      const res = await API.post('/payments/cashfree/create-order', {
+        clinicId: clinicSettings?.clinicId,
+        amount: amount || 399,
+        currency: currency || 'INR',
+        sessionId
+      });
+
+      if (res.data?.success && res.data?.paymentSessionId && !res.data?.isTestSimulation) {
+        if (!window.Cashfree) {
+          const script = document.createElement('script');
+          script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
+          script.async = true;
+          await new Promise((resolve) => {
+            script.onload = () => resolve(true);
+            script.onerror = () => resolve(false);
+            document.head.appendChild(script);
+          });
+        }
+
+        if (window.Cashfree) {
+          const mode = res.data.mode === 'production' ? 'production' : 'sandbox';
+          const cashfree = new window.Cashfree({ mode });
+          await cashfree.checkout({ paymentSessionId: res.data.paymentSessionId });
+          handleConfirmPayment();
+          return;
+        }
+      }
+
+      // If SDK fallback or sandbox mode, launch Cashfree Modal
+      setShowCashfreeModal(true);
+    } catch (err) {
+      console.warn('Cashfree Checkout Error, launching Cashfree Portal Modal:', err);
+      setShowCashfreeModal(true);
+    } finally {
+      setCashfreeLoading(false);
+    }
   };
 
   const handleExecuteCashfreePayment = async () => {
