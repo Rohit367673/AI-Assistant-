@@ -208,7 +208,12 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
         clinicId: clinicSettings?.clinicId,
         amount: amount || 399,
         currency: currency || 'INR',
-        sessionId
+        sessionId,
+        patientInfo: {
+          name: patientForm.fullName || user?.name || 'NephroConsult Patient',
+          email: patientForm.email || user?.email || 'patient@nephroconsult.com',
+          phone: patientForm.phone || '9999999999'
+        }
       });
 
       if (res.data?.success && res.data?.paymentSessionId && window.Cashfree) {
@@ -224,11 +229,10 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
         handleConfirmPayment();
         return;
       }
-
-      handleConfirmPayment();
     } catch (err) {
-      console.warn('Cashfree Checkout Launch Error:', err);
-      handleConfirmPayment();
+      console.error('Cashfree Checkout Error:', err);
+      const errMsg = err.response?.data?.message || 'Failed to initiate Cashfree payment session. Please check your App ID & Secret Key in Dashboard Payment Settings.';
+      alert(`⚠️ Cashfree Payment Notice: ${errMsg}`);
     } finally {
       setCashfreeLoading(false);
     }

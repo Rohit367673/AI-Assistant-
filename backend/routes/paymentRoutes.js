@@ -11,7 +11,11 @@ router.post('/cashfree/create-order', async (req, res) => {
   const { clinicId, amount, currency, sessionId, patientInfo } = req.body;
 
   try {
-    const clinic = await Clinic.findOne({ clinicId });
+    let clinic = null;
+    if (clinicId) {
+      clinic = await Clinic.findOne({ clinicId });
+    }
+
     const cashfreeAppId = clinic?.paymentSettings?.cashfreeAppId || process.env.CASHFREE_APP_ID || 'TEST108386203fd97c98761cc8cc4b1402683801';
     const cashfreeSecretKey = clinic?.paymentSettings?.cashfreeSecretKey || process.env.CASHFREE_SECRET_KEY || 'TEST27ed5d95e79dbec26c04f58cbfcfd89fb6ba572d';
     const environment = clinic?.paymentSettings?.cashfreeEnvironment || process.env.CASHFREE_ENVIRONMENT || 'sandbox';
@@ -19,6 +23,14 @@ router.post('/cashfree/create-order', async (req, res) => {
     const orderId = 'cf_ord_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
     const orderAmount = amount || 399;
     const orderCurrency = currency || 'INR';
+
+    // Format phone to 10 digits as required by Cashfree API
+    let cleanPhone = (patientInfo?.phone || '9999999999').replace(/\D/g, '');
+    if (cleanPhone.length > 10) cleanPhone = cleanPhone.slice(-10);
+    if (cleanPhone.length < 10) cleanPhone = '9999999999';
+
+    const cleanEmail = patientInfo?.email || 'patient@nephroconsult.com';
+    const cleanName = patientInfo?.name || 'NephroConsult Patient';
 
     const baseUrl = environment === 'production' 
       ? 'https://api.cashfree.com/pg/orders'
@@ -31,9 +43,9 @@ router.post('/cashfree/create-order', async (req, res) => {
         order_currency: orderCurrency,
         customer_details: {
           customer_id: 'cust_' + (sessionId || Math.random().toString(36).substring(2, 8)),
-          customer_name: patientInfo?.name || 'NephroConsult Patient',
-          customer_email: patientInfo?.email || 'patient@nephroconsult.com',
-          customer_phone: patientInfo?.phone || '9999999999'
+          customer_name: cleanName,
+          customer_email: cleanEmail,
+          customer_phone: cleanPhone
         },
         order_meta: {
           return_url: `http://localhost:3000/ai-doctor?order_id={order_id}`
@@ -55,22 +67,21 @@ router.post('/cashfree/create-order', async (req, res) => {
         cashfreeAppId
       });
     } catch (apiError) {
-      console.warn('Cashfree API order creation notice:', apiError.response?.data || apiError.message);
-      // Return order with session token for Cashfree JS SDK initiation
-      return res.json({
-        success: true,
-        orderId,
-        paymentSessionId: 'session_' + Date.now() + Math.random().toString(36).substring(2, 8),
-        mode: environment,
-        cashfreeAppId
+      const errorData = apiError.response?.data;
+      const errorMsg = errorData?.message || errorData?.error || apiError.message;
+      console.error('Cashfree API Error Response:', errorData || apiError.message);
+      
+      return res.status(400).json({
+        success: false,
+        message: errorMsg || 'Cashfree payment session creation failed.'
       });
     }
 
   } catch (error) {
-    console.error('Cashfree order creation error:', error.response?.data || error.message);
+    console.error('Cashfree order creation error:', error.message);
     res.status(500).json({ 
       success: false, 
-      message: error.response?.data?.message || error.message || 'Failed to create Cashfree order.' 
+      message: error.message || 'Failed to create Cashfree order.' 
     });
   }
 });
