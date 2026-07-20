@@ -130,7 +130,16 @@ router.post('/', async (req, res) => {
     const matchDate = getLastMatch(message, /\[Selected Date:\s*([^\]]+)\]/) || getLastMatch(historyTextStr, /\[Selected Date:\s*([^\]]+)\]/);
     const matchSlot = getLastMatch(message, /\[Selected Slot:\s*([^\]]+)\]/) || getLastMatch(historyTextStr, /\[Selected Slot:\s*([^\]]+)\]/);
     const hasUploaded = historyTextStr.includes('[Uploaded Document:') || message.includes('[Uploaded Document:');
-    const hasConfirmedPayment = lastMsgLower.includes('confirm payment') || lastMsgLower.includes('[confirm payment') || lastMsgLower.includes('verify') || lastMsgLower.includes('paid');
+    
+    // IMPORTANT: Only check for confirmed payment in the CURRENT message, not old history.
+    // If the user just selected a new slot (e.g. after a booking failure), they need to pay again.
+    const isCurrentMsgNewSlot = message.startsWith('[Selected Slot:');
+    const isCurrentMsgNewDate = message.startsWith('[Selected Date:');
+    const isCurrentMsgConfirmPayment = lastMsgLower.includes('confirm payment') || lastMsgLower.includes('[confirm payment') || lastMsgLower.includes('verify') || lastMsgLower.includes('paid');
+    
+    // Payment is only confirmed if the CURRENT message is the confirmation action
+    // (not from old history where a previous attempt may have failed)
+    const hasConfirmedPayment = isCurrentMsgConfirmPayment && !isCurrentMsgNewSlot && !isCurrentMsgNewDate;
 
     let enforcedReply = null;
     let enforcedAction = null;
@@ -159,7 +168,7 @@ router.post('/', async (req, res) => {
         enforcedAction = { type: 'select_date', data: {} };
       } 
       // Step 3: Choose Time Slot
-      else if (!matchSlot) {
+      else if (!matchSlot || isCurrentMsgNewDate) {
         const chosenDate = matchDate[1];
         let slots = ["09:00 AM", "10:00 AM", "11:00 AM", "02:00 PM", "03:00 PM", "04:00 PM"];
         try {
@@ -182,7 +191,7 @@ router.post('/', async (req, res) => {
         enforcedReply = slotMessage;
         enforcedAction = { type: 'select_slot', data: { slots } };
       } 
-      // Step 4: Check Document Upload constraints
+      // Step 4: Check Document Upload constraints, Payment, or Booking
       else {
         const planName = matchPlan[1];
         const selectedPlanObj = plans.find(p => p.name.toLowerCase() === planName.toLowerCase() || p.id.toLowerCase() === planName.toLowerCase());
@@ -193,8 +202,8 @@ router.post('/', async (req, res) => {
           enforcedReply = `Since you selected a **${planName}**, Dr. Patel requires you to upload your **${requiredDocs.join(', ')}** before the session. Please click below to upload:`;
           enforcedAction = { type: 'upload_document', data: { requiredDocuments: requiredDocs } };
         } 
-        // Step 5: Payment QR Checkout
-        else if (!hasConfirmedPayment) {
+        // Step 5: Payment Checkout — show payment if user just picked a new slot OR hasn't confirmed payment yet
+        else if (!hasConfirmedPayment || isCurrentMsgNewSlot) {
           const amount = selectedPlanObj ? (selectedPlanObj.price || selectedPlanObj.fee) : 499;
           const currency = selectedPlanObj?.currency || region?.currency || clinic.providers?.region?.config?.defaultCurrency || 'INR';
           const currencySymbol = (currency === 'INR' || currency === 'inr') ? '₹' : '$';

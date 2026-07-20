@@ -124,6 +124,14 @@ router.get('/region', (req, res) => {
 // 6. Consultation Plans Provider Endpoint
 router.get('/plans', (req, res) => {
   console.log('[Mock External System] Get Consultation Plans');
+  const currency = (req.query.currency || 'INR').toUpperCase();
+  
+  // Region-based pricing matching NephroConsult website
+  const inrPricing = { initial: 499, followup: 399, urgent: 999 };
+  const usdPricing = { initial: 29, followup: 19, urgent: 49 };
+  const prices = currency === 'INR' ? inrPricing : usdPricing;
+  const symbol = currency === 'INR' ? '₹' : '$';
+
   res.json({
     plans: [
       {
@@ -131,8 +139,9 @@ router.get('/plans', (req, res) => {
         name: 'Initial Consultation',
         description: 'Comprehensive kidney health assessment with detailed medical history review',
         duration: 45,
-        price: 499,
-        currency: 'INR',
+        price: prices.initial,
+        currency: currency,
+        symbol: symbol,
         benefits: [
           'Complete kidney function evaluation',
           'Personalized treatment plan',
@@ -146,8 +155,9 @@ router.get('/plans', (req, res) => {
         name: 'Follow-up Consultation',
         description: 'Progress review and treatment adjustment for existing patients',
         duration: 30,
-        price: 399,
-        currency: 'INR',
+        price: prices.followup,
+        currency: currency,
+        symbol: symbol,
         benefits: [
           'Treatment progress review',
           'Medication adjustments',
@@ -161,8 +171,9 @@ router.get('/plans', (req, res) => {
         name: 'Urgent Consultation',
         description: 'Priority consultation for urgent kidney health concerns (10 AM - 10 PM IST)',
         duration: 45,
-        price: 999,
-        currency: 'INR',
+        price: prices.urgent,
+        currency: currency,
+        symbol: symbol,
         benefits: [
           'Connect within 1 hour',
           'Priority scheduling (10 AM - 10 PM IST)',
