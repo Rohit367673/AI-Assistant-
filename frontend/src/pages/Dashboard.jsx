@@ -380,11 +380,35 @@ export default function Dashboard() {
 
           {activeTab === 'appointments' && (
             <div className="space-y-6">
-              <h3 className="text-xl font-bold text-gradient">Consultations Calendar List</h3>
-              
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <h3 className="text-xl font-bold text-gradient">Consultations & Appointments</h3>
+                  <p className="text-xs text-gray-400">Manage patient bookings, update consultation statuses, and launch video calls.</p>
+                </div>
+              </div>
+
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Total Bookings</span>
+                  <span className="text-2xl font-extrabold text-white">{appointments.length}</span>
+                </div>
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Confirmed</span>
+                  <span className="text-2xl font-extrabold text-emerald-400">{appointments.filter(a => a.status === 'Confirmed').length}</span>
+                </div>
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Paid Consultations</span>
+                  <span className="text-2xl font-extrabold text-indigo-400">{appointments.filter(a => a.paymentStatus === 'Paid').length}</span>
+                </div>
+              </div>
+
+              {/* Appointments List */}
               {appointments.length === 0 ? (
-                <div className="p-8 rounded-2xl bg-white/5 border border-white/10 text-center text-gray-400 text-sm">
-                  No appointments booked yet.
+                <div className="p-12 rounded-2xl bg-white/5 border border-white/10 text-center text-gray-400 text-sm space-y-2">
+                  <Calendar className="w-8 h-8 text-gray-500 mx-auto" />
+                  <p className="font-semibold text-gray-300">No appointments booked yet.</p>
+                  <p className="text-xs text-gray-500">Bookings made via the AI Doctor widget will automatically appear here in real time.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -393,33 +417,53 @@ export default function Dashboard() {
                       key={app._id} 
                       className="p-5 rounded-2xl bg-white/5 border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:bg-white/8 transition-colors"
                     >
-                      <div className="space-y-1">
+                      <div className="space-y-1.5 flex-1">
                         <div className="flex items-center gap-2.5">
                           <span className="font-bold text-white text-base">{app.patientName}</span>
-                          <span className="text-xs text-gray-400 font-semibold">({app.country})</span>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-gray-300 font-semibold">{app.country || 'IN'}</span>
+                          <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-extrabold uppercase tracking-wider ${
+                            app.status === 'Confirmed' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 
+                            app.status === 'Cancelled' ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 
+                            'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                          }`}>
+                            {app.status || 'Confirmed'}
+                          </span>
+                          <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-extrabold uppercase tracking-wider ${
+                            app.paymentStatus === 'Paid' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 
+                            'bg-gray-500/20 text-gray-400 border border-gray-500/30'
+                          }`}>
+                            {app.paymentStatus || 'Paid'}
+                          </span>
                         </div>
-                        <div className="text-xs text-indigo-300 font-semibold">{app.consultationType}</div>
-                        <div className="text-xs text-gray-400 flex items-center gap-3">
-                          <span>Date: <b>{app.date}</b></span>
-                          <span>Time: <b>{app.time}</b></span>
+                        <div className="text-xs text-indigo-300 font-semibold">🩺 {app.consultationType}</div>
+                        <div className="text-xs text-gray-300 flex flex-wrap items-center gap-3">
+                          <span>📅 Date: <b>{app.date}</b></span>
+                          <span>⏰ Time: <b>{app.time}</b></span>
                         </div>
-                        <div className="text-xs text-gray-500">
-                          {app.patientEmail} • {app.patientPhone}
+                        <div className="text-xs text-gray-400">
+                          📧 {app.patientEmail} • 📞 {app.patientPhone}
                         </div>
                         {app.notes && (
-                          <p className="text-xs text-gray-400 italic mt-1 bg-white/3 p-2 rounded-lg max-w-md">
+                          <p className="text-xs text-gray-400 italic mt-1 bg-white/3 p-2 rounded-lg max-w-md border border-white/5">
                             Notes: "{app.notes}"
                           </p>
                         )}
                       </div>
 
-                      {/* Dropdown selectors for action updates */}
-                      <div className="flex flex-wrap gap-2">
+                      {/* Doctor Actions & Dropdowns */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          onClick={() => window.open('https://meet.google.com', '_blank')}
+                          className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+                        >
+                          📹 Join Call
+                        </button>
+
                         {/* Status update */}
                         <select
                           value={app.status}
                           onChange={(e) => handleStatusChange(app._id, e.target.value)}
-                          className="bg-slate-900 border border-white/10 text-xs rounded-xl px-3 py-2 text-white font-semibold focus:outline-none"
+                          className="bg-slate-900 border border-white/15 text-xs rounded-xl px-3 py-2 text-white font-semibold focus:outline-none focus:border-indigo-500"
                         >
                           <option value="Confirmed">Confirmed</option>
                           <option value="Pending">Pending</option>
@@ -430,7 +474,7 @@ export default function Dashboard() {
                         <select
                           value={app.paymentStatus}
                           onChange={(e) => handlePaymentStatusChange(app._id, e.target.value)}
-                          className="bg-slate-900 border border-white/10 text-xs rounded-xl px-3 py-2 text-white font-semibold focus:outline-none"
+                          className="bg-slate-900 border border-white/15 text-xs rounded-xl px-3 py-2 text-white font-semibold focus:outline-none focus:border-indigo-500"
                         >
                           <option value="Unpaid">Unpaid</option>
                           <option value="Paid">Paid</option>

@@ -105,6 +105,35 @@ router.post('/book', async (req, res) => {
   }
 });
 
+// @desc    Get patient appointments by email/phone (Public for Patient Profile)
+// @route   GET /api/appointments/patient
+// @access  Public
+router.get('/patient', async (req, res) => {
+  const { email, phone, clinicId } = req.query;
+
+  if (!email && !phone) {
+    return res.status(400).json({ success: false, message: 'Email or phone query parameter is required.' });
+  }
+
+  try {
+    const query = {};
+    if (clinicId) query.clinicId = clinicId;
+
+    if (email && phone) {
+      query.$or = [{ patientEmail: email.toLowerCase() }, { patientPhone: phone }];
+    } else if (email) {
+      query.patientEmail = email.toLowerCase();
+    } else if (phone) {
+      query.patientPhone = phone;
+    }
+
+    const appointments = await Appointment.find(query).sort({ createdAt: -1 });
+    res.json({ success: true, appointments });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // @desc    Get all appointments for a clinic (Private Dashboard)
 // @route   GET /api/appointments
 // @access  Private

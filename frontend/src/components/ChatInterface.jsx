@@ -18,7 +18,7 @@ const formatMarkdown = (text) => {
   return <div dangerouslySetInnerHTML={{ __html: formatted }} />;
 };
 
-export default function ChatInterface({ clinicSettings, user, initialMessages, isMuted, gender, setGender }) {
+export default function ChatInterface({ clinicSettings, user, initialMessages, isMuted, gender, setGender, onOpenProfile }) {
   const [localGender, setLocalGender] = useState('male');
   const activeGender = gender || localGender;
   const activeSetGender = setGender || setLocalGender;
@@ -747,11 +747,13 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                             {/* 6. Success Receipt card */}
                             {msg.action.type === 'booking_confirm' && (
                               <div className="bg-green-50 border border-green-200 p-4 rounded-xl space-y-3 shadow-sm">
-                                <div className="flex items-center gap-2 text-green-600">
-                                  <CheckCircle className="w-5 h-5 flex-shrink-0" />
-                                  <span className="text-xs font-bold uppercase tracking-wider">Appointment Confirmed</span>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2 text-green-600">
+                                    <CheckCircle className="w-5 h-5 flex-shrink-0" />
+                                    <span className="text-xs font-bold uppercase tracking-wider">Appointment Confirmed</span>
+                                  </div>
                                 </div>
-                                <div className="space-y-1 text-xs text-gray-600">
+                                <div className="space-y-1 text-xs text-gray-600 bg-white p-3 rounded-lg border border-green-100">
                                   <p>🩺 Plan: <span className="font-semibold text-gray-900">{msg.action.data.plan}</span></p>
                                   <p>📅 Date: <span className="font-semibold text-gray-900">{msg.action.data.date}</span></p>
                                   <p>⏰ Time: <span className="font-semibold text-gray-900">{msg.action.data.slot}</span></p>
@@ -765,6 +767,15 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                                 <div className="text-[10px] text-gray-500 italic">
                                   Confirmation alert has been dispatched to your email/SMS.
                                 </div>
+                                {onOpenProfile && (
+                                  <button
+                                    type="button"
+                                    onClick={onOpenProfile}
+                                    className="w-full py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5"
+                                  >
+                                    <FileText className="w-3.5 h-3.5" /> View in My Consultations & Profile
+                                  </button>
+                                )}
                               </div>
                             )}
 

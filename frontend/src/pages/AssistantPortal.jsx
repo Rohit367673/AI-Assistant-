@@ -81,6 +81,33 @@ export default function AssistantPortal() {
     </div>
   );
 
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [patientAppointments, setPatientAppointments] = useState([]);
+  const [loadingAppts, setLoadingAppts] = useState(false);
+  const [selectedReceipt, setSelectedReceipt] = useState(null);
+
+  const fetchPatientAppointments = async (email) => {
+    if (!email) return;
+    setLoadingAppts(true);
+    try {
+      const res = await API.get(`/appointments/patient?email=${encodeURIComponent(email)}&clinicId=${clinicId}`);
+      if (res.data.success) {
+        setPatientAppointments(res.data.appointments || []);
+      }
+    } catch (err) {
+      console.error('Fetch patient appointments error:', err);
+    } finally {
+      setLoadingAppts(false);
+    }
+  };
+
+  const openProfile = () => {
+    setShowProfileModal(true);
+    if (user?.email) {
+      fetchPatientAppointments(user.email);
+    }
+  };
+
   return (
     <div className="h-screen w-screen flex items-center justify-center p-0 md:p-4 overflow-hidden" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #e0e7ff 50%, #f1f5f9 100%)' }}>
       
@@ -103,7 +130,16 @@ export default function AssistantPortal() {
           </div>
 
           {/* Authentication & Setting Controls */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
+            {/* My Consultations Button */}
+            <button 
+              onClick={openProfile}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 text-xs font-bold transition-all shadow-sm active:scale-95"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">My Consultations</span>
+            </button>
+
             {/* Mute Voice Responses button */}
             <button onClick={() => setIsMuted(!isMuted)} className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors" title={isMuted ? 'Unmute' : 'Mute'}>
               {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
@@ -139,10 +175,180 @@ export default function AssistantPortal() {
             isMuted={isMuted}
             gender={gender}
             setGender={setGender}
+            onOpenProfile={openProfile}
           />
         </div>
 
       </div>
+
+      {/* Patient Profile & Consultations Modal */}
+      <AnimatePresence>
+        {showProfileModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl max-w-xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-gray-100 overflow-hidden"
+            >
+              {/* Modal Header */}
+              <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                    {user?.name ? user.name[0] : 'P'}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-800 text-sm">{user ? user.name : 'Patient Profile'}</h3>
+                    <p className="text-xs text-gray-500">{user ? user.email : 'Booked Consultations & Receipts'}</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowProfileModal(false)}
+                  className="p-1.5 rounded-full hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Email lookup form if user is not signed in */}
+              {!user && (
+                <div className="p-4 bg-indigo-50/50 border-b border-indigo-100 flex gap-2 items-center">
+                  <input
+                    type="email"
+                    placeholder="Enter email used for booking..."
+                    className="flex-1 px-3 py-2 text-xs border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') fetchPatientAppointments(e.target.value);
+                    }}
+                  />
+                  <button 
+                    onClick={(e) => {
+                      const input = e.target.previousElementSibling;
+                      fetchPatientAppointments(input.value);
+                    }}
+                    className="px-3 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 transition-all"
+                  >
+                    Search
+                  </button>
+                </div>
+              )}
+
+              {/* Modal Body — Appointments Cards List */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Your Scheduled Consultations</h4>
+
+                {loadingAppts ? (
+                  <div className="py-8 text-center flex justify-center items-center gap-2 text-gray-400 text-xs">
+                    <Loader2 className="w-4 h-4 animate-spin text-primary" /> Loading consultation records...
+                  </div>
+                ) : patientAppointments.length === 0 ? (
+                  <div className="py-10 text-center border-2 border-dashed border-gray-200 rounded-xl space-y-2">
+                    <CheckCircle className="w-8 h-8 text-gray-300 mx-auto" />
+                    <p className="text-xs font-semibold text-gray-600">No consultations found.</p>
+                    <p className="text-[11px] text-gray-400">Complete a booking in chat to see your consultation cards here.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {patientAppointments.map((apt) => (
+                      <div 
+                        key={apt._id}
+                        className="p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:border-primary/50 transition-all space-y-3"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className="text-xs font-extrabold text-gray-900 block">{apt.consultationType}</span>
+                            <span className="text-[11px] text-gray-500 font-medium">Doctor: {settings?.doctorName || 'Dr. Ilango S. Prakasam'}</span>
+                          </div>
+                          <div className="flex gap-1.5">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                              apt.status === 'Confirmed' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                            }`}>
+                              {apt.status || 'Confirmed'}
+                            </span>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                              apt.paymentStatus === 'Paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                            }`}>
+                              {apt.paymentStatus || 'Paid'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                          <div>📅 Date: <span className="font-bold text-gray-800">{apt.date}</span></div>
+                          <div>⏰ Time: <span className="font-bold text-gray-800">{apt.time}</span></div>
+                          <div>👤 Patient: <span className="font-medium text-gray-800">{apt.patientName}</span></div>
+                          <div>🌍 Country: <span className="font-medium text-gray-800">{apt.country || 'IN'}</span></div>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            onClick={() => window.open('https://meet.google.com', '_blank')}
+                            className="flex-1 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                          >
+                            <ChevronRight className="w-3.5 h-3.5" /> Join Video Call
+                          </button>
+                          <button
+                            onClick={() => setSelectedReceipt(apt)}
+                            className="px-3 py-2 border border-gray-200 hover:border-gray-300 text-gray-700 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 bg-white hover:bg-gray-50"
+                          >
+                            <FileText className="w-3.5 h-3.5 text-gray-500" /> Receipt
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Printable Receipt Modal */}
+      <AnimatePresence>
+        {selectedReceipt && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-gray-200"
+            >
+              <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <h4 className="font-extrabold text-gray-900 text-sm">Consultation Receipt</h4>
+                </div>
+                <button onClick={() => setSelectedReceipt(null)} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-2 text-xs text-gray-600 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                <p className="flex justify-between"><span>Receipt ID:</span> <span className="font-mono font-bold text-gray-900">{selectedReceipt._id?.substring(0, 10) || 'REC-36767'}</span></p>
+                <p className="flex justify-between"><span>Clinic:</span> <span className="font-semibold text-gray-900">{settings?.name || 'NephroConsult Clinic'}</span></p>
+                <p className="flex justify-between"><span>Consultation:</span> <span className="font-semibold text-gray-900">{selectedReceipt.consultationType}</span></p>
+                <p className="flex justify-between"><span>Patient Name:</span> <span className="font-semibold text-gray-900">{selectedReceipt.patientName}</span></p>
+                <p className="flex justify-between"><span>Patient Email:</span> <span className="font-semibold text-gray-900">{selectedReceipt.patientEmail}</span></p>
+                <p className="flex justify-between"><span>Date & Time:</span> <span className="font-semibold text-gray-900">{selectedReceipt.date} at {selectedReceipt.time}</span></p>
+                <p className="flex justify-between"><span>Payment Provider:</span> <span className="font-semibold text-gray-900">{selectedReceipt.paymentProvider || 'UPI / Online'}</span></p>
+                <p className="flex justify-between pt-2 border-t border-gray-200 text-sm font-extrabold text-gray-900">
+                  <span>Status:</span> <span className="text-green-600">{selectedReceipt.paymentStatus || 'Paid'}</span>
+                </p>
+              </div>
+
+              <button
+                onClick={() => window.print()}
+                className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-2"
+              >
+                Print / Save PDF Receipt
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }
