@@ -10,6 +10,7 @@ import appointmentRoutes from './routes/appointmentRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import kbRoutes from './routes/kbRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
 import mockExternalServer from './routes/mockExternalServer.js';
 
 dotenv.config();
@@ -41,6 +42,7 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/chat', reportRoutes);
 app.use('/api/kb', kbRoutes);
+app.use('/api/payments', paymentRoutes);
 app.use('/api/mock-external', mockExternalServer);
 
 // Global Error Handler Middleware

@@ -20,10 +20,14 @@ const runDatabaseMigration = async () => {
           { name: 'Urgent Consultation', fee: 999 }
         ];
         
-        // 2. Update payment settings to match NephroConsult VPA
+        // 2. Update payment settings to match NephroConsult VPA and Cashfree Gateway
         clinic.paymentSettings = {
           qrCodeEnabled: true,
           qrValue: 'upi://pay?pa=nephroconsult@upi&pn=NephroConsult&cu=INR',
+          cashfreeEnabled: true,
+          cashfreeAppId: clinic.paymentSettings?.cashfreeAppId || process.env.CASHFREE_APP_ID || 'TEST108386203fd97c98761cc8cc4b1402683801',
+          cashfreeSecretKey: clinic.paymentSettings?.cashfreeSecretKey || process.env.CASHFREE_SECRET_KEY || '',
+          cashfreeEnvironment: clinic.paymentSettings?.cashfreeEnvironment || 'sandbox',
           razorpayEnabled: false,
           stripeEnabled: false
         };

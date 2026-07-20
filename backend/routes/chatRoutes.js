@@ -193,10 +193,15 @@ router.post('/', async (req, res) => {
           const currency = selectedPlanObj ? (selectedPlanObj.currency || 'INR') : 'INR';
           const qrCode = `upi://pay?pa=nephroconsult@upi&pn=NephroConsult&am=${amount}&cu=${currency}`;
           
-          enforcedReply = `Your appointment is set for **${matchDate[1]}** at **${matchSlot[1]}**. Please scan this QR code to complete the fee payment of **${currency === 'INR' ? '₹' : '$'}${amount}**:`;
+          enforcedReply = `Your appointment is set for **${matchDate[1]}** at **${matchSlot[1]}**. Please complete the fee payment of **${currency === 'INR' ? '₹' : '$'}${amount}** below:`;
           enforcedAction = {
             type: 'payment_checkout',
-            data: { amount, currency, qrCode }
+            data: { 
+              amount, 
+              currency, 
+              qrCode,
+              paymentSettings: clinic?.paymentSettings || {}
+            }
           };
         } 
         // Step 6: Confirmation Receipt

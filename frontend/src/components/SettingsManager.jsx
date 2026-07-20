@@ -326,12 +326,62 @@ export default function SettingsManager({ initialProfile, onProfileUpdate }) {
             <label className="flex items-center gap-3 text-sm text-gray-200">
               <input
                 type="checkbox"
+                name="cashfreeEnabled"
+                checked={profile.paymentSettings?.cashfreeEnabled}
+                onChange={handlePaymentSettingsChange}
+                className="w-4.5 h-4.5 accent-indigo-500 bg-slate-900 border-white/10 rounded"
+              />
+              Enable Cashfree Payment Gateway
+            </label>
+
+            {profile.paymentSettings?.cashfreeEnabled && (
+              <div className="space-y-2 pl-6 pt-1 border-l-2 border-indigo-500/30">
+                <div>
+                  <label className="block text-[11px] text-gray-400 mb-1">Cashfree App ID</label>
+                  <input
+                    type="text"
+                    name="cashfreeAppId"
+                    value={profile.paymentSettings?.cashfreeAppId || ''}
+                    onChange={handlePaymentSettingsChange}
+                    placeholder="e.g. TEST108386203fd97c98761cc..."
+                    className="w-full px-4 py-2 rounded-xl glass-input text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-gray-400 mb-1">Cashfree Secret Key</label>
+                  <input
+                    type="password"
+                    name="cashfreeSecretKey"
+                    value={profile.paymentSettings?.cashfreeSecretKey || ''}
+                    onChange={handlePaymentSettingsChange}
+                    placeholder="Cashfree Secret Key"
+                    className="w-full px-4 py-2 rounded-xl glass-input text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-gray-400 mb-1">Cashfree Environment</label>
+                  <select
+                    name="cashfreeEnvironment"
+                    value={profile.paymentSettings?.cashfreeEnvironment || 'sandbox'}
+                    onChange={handlePaymentSettingsChange}
+                    className="w-full px-4 py-2 rounded-xl glass-input text-xs bg-slate-900 text-gray-200"
+                  >
+                    <option value="sandbox">Sandbox (Testing)</option>
+                    <option value="production">Production (Live)</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            <label className="flex items-center gap-3 text-sm text-gray-200">
+              <input
+                type="checkbox"
                 name="stripeEnabled"
                 checked={profile.paymentSettings?.stripeEnabled}
                 onChange={handlePaymentSettingsChange}
                 className="w-4.5 h-4.5 accent-indigo-500 bg-slate-900 border-white/10 rounded"
               />
-              Enable Stripe Module (Sandbox Sandbox)
+              Enable Stripe Module (Sandbox)
             </label>
 
             <label className="flex items-center gap-3 text-sm text-gray-200">
@@ -342,7 +392,7 @@ export default function SettingsManager({ initialProfile, onProfileUpdate }) {
                 onChange={handlePaymentSettingsChange}
                 className="w-4.5 h-4.5 accent-indigo-500 bg-slate-900 border-white/10 rounded"
               />
-              Enable Razorpay Module (Sandbox Sandbox)
+              Enable Razorpay Module (Sandbox)
             </label>
           </div>
         </div>

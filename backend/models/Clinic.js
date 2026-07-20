@@ -74,6 +74,10 @@ const clinicSchema = new mongoose.Schema({
   paymentSettings: {
     qrCodeEnabled: { type: Boolean, default: true },
     qrValue: { type: String, default: 'upi://pay?pa=clinic@upi&pn=ClinicAI&cu=INR' },
+    cashfreeEnabled: { type: Boolean, default: false },
+    cashfreeAppId: { type: String, default: '' },
+    cashfreeSecretKey: { type: String, default: '' },
+    cashfreeEnvironment: { type: String, enum: ['sandbox', 'production'], default: 'sandbox' },
     razorpayEnabled: { type: Boolean, default: false },
     stripeEnabled: { type: Boolean, default: false }
   },
