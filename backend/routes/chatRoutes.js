@@ -131,8 +131,6 @@ router.post('/', async (req, res) => {
       return matches.length > 0 ? matches[matches.length - 1] : null;
     };
 
-    // Detect if this is a FRESH booking request (user typed "book", "appointment", etc.)
-    // vs a continuation step (user clicked a widget that sends [Selected Plan: ...] etc.)
     const isContinuationStep = message.startsWith('[Selected Plan:') || 
                                 message.startsWith('[Selected Date:') || 
                                 message.startsWith('[Selected Slot:') || 
@@ -142,12 +140,69 @@ router.post('/', async (req, res) => {
     
     const isNewBookingRequest = hasBookKeyword && !isContinuationStep;
 
-    // For a NEW booking → ignore all history matches, start fresh from Step 1
-    // For a continuation → use history to know where we are
-    const matchPlan = isNewBookingRequest ? null : (getLastMatch(message, /\[Selected Plan:\s*([^\]]+)\]/) || getLastMatch(historyTextStr, /\[Selected Plan:\s*([^\]]+)\]/));
-    const matchDate = isNewBookingRequest ? null : (getLastMatch(message, /\[Selected Date:\s*([^\]]+)\]/) || getLastMatch(historyTextStr, /\[Selected Date:\s*([^\]]+)\]/));
-    const matchSlot = isNewBookingRequest ? null : (getLastMatch(message, /\[Selected Slot:\s*([^\]]+)\]/) || getLastMatch(historyTextStr, /\[Selected Slot:\s*([^\]]+)\]/));
-    const matchPatientInfo = isNewBookingRequest ? null : (getLastMatch(message, /\[Patient Info:\s*([^\]]+)\]/) || getLastMatch(historyTextStr, /\[Patient Info:\s*([^\]]+)\]/));
+    // Helper to get booking state cleanly relative to the LAST plan selection
+    const getBookingState = () => {
+      if (isNewBookingRequest) {
+        return { matchPlan: null, matchDate: null, matchSlot: null, matchPatientInfo: null };
+      }
+
+      // If user clicked a NEW Plan card (message: [Selected Plan: ...])
+      if (message.startsWith('[Selected Plan:')) {
+        const match = message.match(/\[Selected Plan:\s*([^\]]+)\]/);
+        return { matchPlan: match ? match[1] : null, matchDate: null, matchSlot: null, matchPatientInfo: null };
+      }
+
+      // Find last plan in history + current message
+      const fullText = (historyTextStr ? historyTextStr + ' | ' : '') + message;
+      const planMatches = [...fullText.matchAll(/\[Selected Plan:\s*([^\]]+)\]/g)];
+      if (planMatches.length === 0) {
+        return { matchPlan: null, matchDate: null, matchSlot: null, matchPatientInfo: null };
+      }
+
+      const lastPlanMatch = planMatches[planMatches.length - 1];
+      const planName = lastPlanMatch[1];
+      const textAfterPlan = fullText.substring(lastPlanMatch.index);
+
+      // If user clicked a NEW Date (message: [Selected Date: ...])
+      if (message.startsWith('[Selected Date:')) {
+        const dateMatch = message.match(/\[Selected Date:\s*([^\]]+)\]/);
+        return { matchPlan: planName, matchDate: dateMatch ? dateMatch[1] : null, matchSlot: null, matchPatientInfo: null };
+      }
+
+      // If user clicked a NEW Slot (message: [Selected Slot: ...])
+      if (message.startsWith('[Selected Slot:')) {
+        const dateMatch = getLastMatch(textAfterPlan, /\[Selected Date:\s*([^\]]+)\]/);
+        const slotMatch = message.match(/\[Selected Slot:\s*([^\]]+)\]/);
+        return { matchPlan: planName, matchDate: dateMatch ? dateMatch[1] : null, matchSlot: slotMatch ? slotMatch[1] : null, matchPatientInfo: null };
+      }
+
+      // If user submitted Patient Info (message: [Patient Info: ...])
+      if (message.startsWith('[Patient Info:')) {
+        const dateMatch = getLastMatch(textAfterPlan, /\[Selected Date:\s*([^\]]+)\]/);
+        const slotMatch = getLastMatch(textAfterPlan, /\[Selected Slot:\s*([^\]]+)\]/);
+        const patientMatch = message.match(/\[Patient Info:\s*([^\]]+)\]/);
+        return { 
+          matchPlan: planName, 
+          matchDate: dateMatch ? dateMatch[1] : null, 
+          matchSlot: slotMatch ? slotMatch[1] : null, 
+          matchPatientInfo: patientMatch ? patientMatch[1] : null 
+        };
+      }
+
+      // Fallback for intermediate text messages during booking
+      const dateMatch = getLastMatch(textAfterPlan, /\[Selected Date:\s*([^\]]+)\]/);
+      const slotMatch = getLastMatch(textAfterPlan, /\[Selected Slot:\s*([^\]]+)\]/);
+      const patientMatch = getLastMatch(textAfterPlan, /\[Patient Info:\s*([^\]]+)\]/);
+
+      return {
+        matchPlan: planName,
+        matchDate: dateMatch ? dateMatch[1] : null,
+        matchSlot: slotMatch ? slotMatch[1] : null,
+        matchPatientInfo: patientMatch ? patientMatch[1] : null
+      };
+    };
+
+    const { matchPlan, matchDate, matchSlot, matchPatientInfo } = getBookingState();
     const hasUploaded = isNewBookingRequest ? false : (historyTextStr.includes('[Uploaded Document:') || message.includes('[Uploaded Document:'));
     
     // Payment is only confirmed if the CURRENT message is the confirmation action
@@ -183,7 +238,7 @@ router.post('/', async (req, res) => {
 
       // ── Step 2: Choose Date ──
       else if (!matchDate) {
-        const planName = matchPlan[1];
+        const planName = matchPlan;
         const selectedPlanObj = plans.find(p => p.name.toLowerCase() === planName.toLowerCase() || p.id.toLowerCase() === planName.toLowerCase());
         const price = selectedPlanObj ? (selectedPlanObj.price || selectedPlanObj.fee) : '';
         const currency = selectedPlanObj?.currency || 'INR';
@@ -194,7 +249,7 @@ router.post('/', async (req, res) => {
 
       // ── Step 3: Choose Time Slot ──
       else if (!matchSlot) {
-        const chosenDate = matchDate[1];
+        const chosenDate = matchDate;
         let slots = ["09:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "02:00 PM", "03:00 PM", "04:00 PM", "05:00 PM"];
         try {
           const liveSlots = await registry.booking.getAvailableSlots(clinicId, chosenDate);
@@ -219,7 +274,7 @@ router.post('/', async (req, res) => {
 
       // ── Step 4: Collect Patient Information ──
       else if (!matchPatientInfo) {
-        enforcedReply = `⏰ Time slot selected: **${matchSlot[1]}**\n\n👤 Please fill in your details to proceed with the booking:`;
+        enforcedReply = `⏰ Time slot selected: **${matchSlot}**\n\n👤 Please fill in your details to proceed with the booking:`;
         enforcedAction = { type: 'collect_patient_info', data: {
           countries: [
             { code: 'IN', name: 'India', currency: 'INR', symbol: '₹' },
@@ -237,13 +292,13 @@ router.post('/', async (req, res) => {
 
       // ── Steps 5-7: Docs → Payment → Book ──
       else {
-        const planName = matchPlan[1];
+        const planName = matchPlan;
         const selectedPlanObj = plans.find(p => p.name.toLowerCase() === planName.toLowerCase() || p.id.toLowerCase() === planName.toLowerCase());
         const requiredDocs = selectedPlanObj?.requiredDocuments || [];
         const hasRequiredDocs = requiredDocs.length > 0;
 
         // Parse patient info from the tag: "FirstName|LastName|Email|Phone|Country"
-        const infoParts = matchPatientInfo[1].split('|');
+        const infoParts = matchPatientInfo.split('|');
         const pFirstName = infoParts[0] || '';
         const pLastName = infoParts[1] || '';
         const pEmail = infoParts[2] || patientEmail || '';
@@ -269,7 +324,7 @@ router.post('/', async (req, res) => {
           const currencySymbol = (currency === 'INR' || currency === 'inr') ? '₹' : '$';
           const qrCode = `upi://pay?pa=nephroconsult@upi&pn=NephroConsult&am=${amount}&cu=${currency}`;
           
-          enforcedReply = `✅ Booking Summary:\n• **Plan:** ${planName}\n• **Date:** ${matchDate[1]}\n• **Time:** ${matchSlot[1]}\n• **Patient:** ${pFullName}\n• **Email:** ${pEmail}\n\nPlease complete the payment of **${currencySymbol}${amount}** to confirm:`;
+          enforcedReply = `✅ Booking Summary:\n• **Plan:** ${planName}\n• **Date:** ${matchDate}\n• **Time:** ${matchSlot}\n• **Patient:** ${pFullName}\n• **Email:** ${pEmail}\n\nPlease complete the payment of **${currencySymbol}${amount}** to confirm:`;
           enforcedAction = {
             type: 'payment_checkout',
             data: { 
@@ -283,9 +338,9 @@ router.post('/', async (req, res) => {
 
         // Step 7: Confirm & Book Appointment
         else {
-          const date = matchDate[1];
-          const slot = matchSlot[1];
-          const plan = matchPlan[1];
+          const date = matchDate;
+          const slot = matchSlot;
+          const plan = matchPlan;
           const amount = selectedPlanObj ? (selectedPlanObj.price || selectedPlanObj.fee) : 499;
 
           // Trigger internal/external booking creation
