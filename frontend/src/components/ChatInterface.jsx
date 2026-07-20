@@ -176,7 +176,6 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
         const { paymentSessionId, mode, isTestSimulation } = res.data;
         
         if (isTestSimulation) {
-          alert('Cashfree Gateway (Sandbox Test Mode): Order Initiated successfully!');
           handleConfirmPayment();
           return;
         }
@@ -201,7 +200,6 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
       }
     } catch (err) {
       console.error('Cashfree Checkout Error:', err);
-      alert(err.response?.data?.message || 'Cashfree payment session created. Confirming booking...');
       handleConfirmPayment();
     } finally {
       setCashfreeLoading(false);

@@ -228,8 +228,15 @@ router.post('/', async (req, res) => {
           });
 
           if (!bookingResult.success) {
-            enforcedReply = `I apologize, but scheduling failed: **${bookingResult.message}** Please review slot grids and try again.`;
-            enforcedAction = null;
+            let freshSlots = ["09:00 AM", "10:00 AM", "11:00 AM", "02:00 PM", "03:00 PM", "04:00 PM"];
+            try {
+              const liveSlots = await registry.booking.getAvailableSlots(clinicId, date);
+              if (liveSlots && liveSlots.length > 0) freshSlots = liveSlots;
+            } catch (e) {
+              console.warn('Failed to query slots provider for fallback:', e.message);
+            }
+            enforcedReply = `I apologize, but scheduling failed: **${bookingResult.message}**\n\nPlease select one of the available open time slots for **${date}** below:`;
+            enforcedAction = { type: 'select_slot', data: { slots: freshSlots } };
           } else {
             enforcedReply = `Congratulations! Your payment has been verified. Your appointment is confirmed and a receipt has been logged. You can review all details in your profile settings.`;
             enforcedAction = {

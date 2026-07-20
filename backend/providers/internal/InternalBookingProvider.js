@@ -3,6 +3,19 @@ import Appointment from '../../models/Appointment.js';
 import Clinic from '../../models/Clinic.js';
 
 export default class InternalBookingProvider extends BookingProvider {
+  normalizeTime(timeStr) {
+    if (!timeStr) return '';
+    const clean = timeStr.trim().toLowerCase().replace(/\s+/g, '');
+    const match = clean.match(/^(\d{1,2}):?(\d{2})?(am|pm)?$/);
+    if (!match) return clean;
+    let hours = parseInt(match[1], 10);
+    const minutes = match[2] || '00';
+    const period = match[3];
+    if (period === 'pm' && hours < 12) hours += 12;
+    if (period === 'am' && hours === 12) hours = 0;
+    return `${String(hours).padStart(2, '0')}:${minutes}`;
+  }
+
   async bookAppointment({
     clinicId,
     patientName,
@@ -19,26 +32,23 @@ export default class InternalBookingProvider extends BookingProvider {
     try {
       const isPaid = paymentProvider === 'Razorpay' || paymentProvider === 'Stripe' || paymentProvider === 'Paid' || paymentStatus === 'Paid';
       
-      // Enforce duplicate check
-      const isDuplicate = await Appointment.findOne({
+      const targetTimeNorm = this.normalizeTime(time);
+      const existingAppointments = await Appointment.find({
         clinicId,
         date,
-        time,
         status: { $ne: 'Cancelled' }
-      });
+      }).select('time');
+
+      const isDuplicate = existingAppointments.some(app => this.normalizeTime(app.time) === targetTimeNorm);
       if (isDuplicate) {
         return {
           success: false,
-          message: 'This time slot is already booked. Please select another slot.'
+          message: `The time slot (${time}) is already booked for this date. Please select another slot.`
         };
       }
 
       // Enforce daily limit of 10 appointments
-      const dailyCount = await Appointment.countDocuments({
-        clinicId,
-        date,
-        status: { $ne: 'Cancelled' }
-      });
+      const dailyCount = existingAppointments.length;
       if (dailyCount >= 10) {
         return {
           success: false,
@@ -88,8 +98,8 @@ export default class InternalBookingProvider extends BookingProvider {
         status: { $ne: 'Cancelled' }
       }).select('time');
 
-      const bookedTimes = bookedAppointments.map(app => app.time);
-      return totalSlots.filter(slot => !bookedTimes.includes(slot));
+      const bookedNormalized = bookedAppointments.map(app => this.normalizeTime(app.time));
+      return totalSlots.filter(slot => !bookedNormalized.includes(this.normalizeTime(slot)));
     } catch (error) {
       console.error('Error fetching internal slots:', error);
       return [];
