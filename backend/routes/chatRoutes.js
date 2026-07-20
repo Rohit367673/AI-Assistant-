@@ -120,9 +120,15 @@ router.post('/', async (req, res) => {
     const lastMsgLower = message.toLowerCase();
     const hasBookKeyword = lastMsgLower.includes('book') || lastMsgLower.includes('appointment') || lastMsgLower.includes('schedule') || lastMsgLower.includes('slot');
     
-    const matchPlan = historyTextStr.match(/\[Selected Plan:\s*([^\]]+)\]/) || message.match(/\[Selected Plan:\s*([^\]]+)\]/);
-    const matchDate = historyTextStr.match(/\[Selected Date:\s*([^\]]+)\]/) || message.match(/\[Selected Date:\s*([^\]]+)\]/);
-    const matchSlot = historyTextStr.match(/\[Selected Slot:\s*([^\]]+)\]/) || message.match(/\[Selected Slot:\s*([^\]]+)\]/);
+    const getLastMatch = (str, regexPattern) => {
+      if (!str) return null;
+      const matches = [...str.matchAll(new RegExp(regexPattern, 'g'))];
+      return matches.length > 0 ? matches[matches.length - 1] : null;
+    };
+
+    const matchPlan = getLastMatch(message, /\[Selected Plan:\s*([^\]]+)\]/) || getLastMatch(historyTextStr, /\[Selected Plan:\s*([^\]]+)\]/);
+    const matchDate = getLastMatch(message, /\[Selected Date:\s*([^\]]+)\]/) || getLastMatch(historyTextStr, /\[Selected Date:\s*([^\]]+)\]/);
+    const matchSlot = getLastMatch(message, /\[Selected Slot:\s*([^\]]+)\]/) || getLastMatch(historyTextStr, /\[Selected Slot:\s*([^\]]+)\]/);
     const hasUploaded = historyTextStr.includes('[Uploaded Document:') || message.includes('[Uploaded Document:');
     const hasConfirmedPayment = lastMsgLower.includes('confirm payment') || lastMsgLower.includes('[confirm payment') || lastMsgLower.includes('verify') || lastMsgLower.includes('paid');
 
@@ -190,10 +196,11 @@ router.post('/', async (req, res) => {
         // Step 5: Payment QR Checkout
         else if (!hasConfirmedPayment) {
           const amount = selectedPlanObj ? (selectedPlanObj.price || selectedPlanObj.fee) : 499;
-          const currency = selectedPlanObj ? (selectedPlanObj.currency || 'INR') : 'INR';
+          const currency = selectedPlanObj?.currency || region?.currency || clinic.providers?.region?.config?.defaultCurrency || 'INR';
+          const currencySymbol = (currency === 'INR' || currency === 'inr') ? '₹' : '$';
           const qrCode = `upi://pay?pa=nephroconsult@upi&pn=NephroConsult&am=${amount}&cu=${currency}`;
           
-          enforcedReply = `Your appointment is set for **${matchDate[1]}** at **${matchSlot[1]}**. Please complete the fee payment of **${currency === 'INR' ? '₹' : '$'}${amount}** below:`;
+          enforcedReply = `Your appointment is set for **${matchDate[1]}** at **${matchSlot[1]}**. Please complete the fee payment of **${currencySymbol}${amount}** below:`;
           enforcedAction = {
             type: 'payment_checkout',
             data: { 

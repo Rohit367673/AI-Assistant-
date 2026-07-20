@@ -7,13 +7,15 @@ export default class InternalConsultationProvider extends ConsultationProvider {
       const clinic = await Clinic.findOne({ clinicId });
       if (!clinic) return [];
 
+      const regionCurrency = clinic.providers?.region?.config?.defaultCurrency || 'INR';
+
       return (clinic.consultationTypes || []).map(plan => ({
         id: plan._id ? plan._id.toString() : plan.name.toLowerCase().replace(/\s+/g, '-'),
         name: plan.name,
         description: `Simulated plan for ${plan.name} at ${clinic.name}.`,
         duration: 30,
         price: plan.fee,
-        currency: clinic.currency || 'USD',
+        currency: regionCurrency,
         requiredDocuments: plan.name.toLowerCase().includes('specialist') ? ['Lab Report'] : []
       }));
     } catch (error) {
