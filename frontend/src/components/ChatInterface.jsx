@@ -738,18 +738,22 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                               </div>
                             )}
 
-                            {/* 5. Payment checkout card with Cashfree & UPI support */}
+                            {/* 5. Payment checkout card — NephroConsult style Cashfree Integration */}
                             {msg.action.type === 'payment_checkout' && (
-                              <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-4">
-                                <div className="flex justify-between items-center text-xs">
+                              <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-4 text-left">
+                                <div className="flex justify-between items-center text-xs pb-2 border-b border-gray-100">
                                   <span className="text-gray-600 font-medium">Plan consultation charge:</span>
-                                  <span className="text-sm font-extrabold text-gray-900">
+                                  <span className="text-base font-extrabold text-gray-900">
                                     {msg.action.data.currency === 'INR' ? `₹${msg.action.data.amount}` : `$${msg.action.data.amount}`}
                                   </span>
                                 </div>
 
-                                {/* Show Cashfree Payment Gateway Option */}
-                                {(msg.action.data.paymentSettings?.cashfreeEnabled ?? clinicSettings?.paymentSettings?.cashfreeEnabled ?? true) && (
+                                <div className="space-y-2">
+                                  <div className="text-[11px] text-gray-500 font-medium flex items-center gap-1.5 bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                                    <Shield className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+                                    <span>Official Cashfree Payment Gateway (Supports UPI, Credit/Debit Cards, Netbanking, Wallets)</span>
+                                  </div>
+
                                   <button
                                     type="button"
                                     onClick={() => handleCashfreeCheckout(msg.action.data.amount, msg.action.data.currency)}
@@ -757,35 +761,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
                                   >
                                     <CreditCard className="w-4 h-4" /> Pay via Cashfree Payment Gateway
                                   </button>
-                                )}
-
-                                {/* Show UPI QR Code option */}
-                                {(msg.action.data.paymentSettings?.qrCodeEnabled ?? clinicSettings?.paymentSettings?.qrCodeEnabled ?? true) && (
-                                  <>
-                                    <div className="relative flex py-1 items-center">
-                                      <div className="flex-grow border-t border-gray-200"></div>
-                                      <span className="flex-shrink mx-2 text-[10px] text-gray-400 font-semibold uppercase">Or Scan UPI QR</span>
-                                      <div className="flex-grow border-t border-gray-200"></div>
-                                    </div>
-
-                                    <div className="flex flex-col items-center justify-center bg-white p-3 rounded-lg max-w-[140px] mx-auto shadow-md border border-gray-100">
-                                      <img 
-                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(msg.action.data.qrCode)}`} 
-                                        alt="Payment QR"
-                                        className="w-28 h-28"
-                                      />
-                                      <span className="text-[9px] text-gray-500 font-bold mt-1 uppercase tracking-wider">Scan with UPI App</span>
-                                    </div>
-
-                                    <button
-                                      type="button"
-                                      onClick={handleConfirmPayment}
-                                      className="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5"
-                                    >
-                                      <CheckCircle className="w-4 h-4 text-green-400" /> Confirm Payment & Book
-                                    </button>
-                                  </>
-                                )}
+                                </div>
                               </div>
                             )}
 
