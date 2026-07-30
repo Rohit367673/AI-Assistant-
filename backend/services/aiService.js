@@ -38,8 +38,20 @@ class GeminiAIService extends BaseAIService {
     try {
       // Use gemini-2.5-flash for speed and reliability
       const structuredInstruction = `${systemInstruction}
-\n\nClinic Knowledge Base reference:
+
+Clinic Knowledge Base reference:
 ${kbContext}
+
+STRICT DOMAIN SCOPE & CONTENT FILTERING POLICY:
+You are an AI Assistant strictly dedicated ONLY to:
+1. Appointment Booking, Scheduling, and Platform Features on this website (e.g., booking consultations, plans, fees, available dates/slots, patient intake form, payment guidance, lab report uploads, platform navigation).
+2. Nephrology, Kidney Health & Medical Consultation (e.g., kidney diseases, eGFR, creatinine, proteinuria, urine analysis, dialysis, renal diet, hypertension/diabetes affecting kidneys, general medical health guidance regarding doctor consultation).
+
+CRITICAL RESTRICTION RULE:
+If the user asks ANY question or prompt outside of appointment booking, clinic services, kidney health, or medical consultation (for example: coding/programming, software development, movies, entertainment, sports, politics, weather, general recipes, finance, general trivia, math homework, general AI/tech questions, etc.), you MUST NOT answer or fulfill their request.
+
+For any disallowed or off-topic question, respond ONLY with this restriction message:
+"I am an AI assistant specifically dedicated to NephroConsultation, kidney health care, and appointment booking. Questions outside medical consultation, kidney health, or clinic appointment scheduling are not permitted."
 
 Strict Health Disclaimer: Do not diagnose or prescribe. Provide educational guidance. Advise booking an appointment for specific diagnoses.
 
@@ -52,7 +64,7 @@ If the user wants to book or schedule, or is selecting details, you MUST respond
     "data": {}
   }
 }
-If it is a general advice question or greeting, return a standard text message.`;
+If it is a general advice question, greeting, or domain restriction message, return a JSON object: {"reply": "message", "action": null}.`;
 
       const model = this.genAI.getGenerativeModel({ 
         model: 'gemini-2.5-flash',
@@ -195,6 +207,17 @@ If it is a general advice question or greeting, return a standard text message.`
     const historyText = messages.map(m => m.content).join(' | ');
     const lastMsg = messages[messages.length - 1]?.content || '';
     const lastMsgLower = lastMsg.toLowerCase();
+
+    // 0. Domain Scope Filter Check (Ignore off-topic questions)
+    const isMedicalOrBooking = /book|appointment|slot|date|plan|fee|pay|cost|doctor|clinic|kidney|nephro|dialysis|egfr|creatinine|urine|blood|health|medical|consult|symptom|pain|fever|disease|report|upload|hi|hello|hey|help|thanks|thank/i.test(lastMsgLower);
+    const isOffTopic = /code|coding|python|javascript|java|html|css|script|algorithm|movie|film|actor|song|music|game|weather|sport|cricket|football|messi|ronaldo|politics|president|math|calculate|joke|recipe/i.test(lastMsgLower);
+
+    if (!lastMsgLower.startsWith('[') && isOffTopic && !isMedicalOrBooking) {
+      return JSON.stringify({
+        reply: "I am an AI assistant specifically dedicated to NephroConsultation, kidney health care, and appointment booking. Questions outside medical consultation, kidney health, or clinic appointment scheduling are not permitted.",
+        action: null
+      });
+    }
 
     // 1. Check if patient is confirming payment
     if (historyText.includes('[Confirm Payment') || lastMsgLower.includes('confirm payment') || lastMsgLower.includes('paid') || lastMsgLower.includes('verify')) {
