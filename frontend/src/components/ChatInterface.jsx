@@ -172,18 +172,34 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
     handleSendMessage(null, `[Selected Slot: ${slotString}]`);
   };
 
+  // Fix 2: Phone number sanitization matching NephroConsult validatePhoneNumber()
+  const validateAndSanitizePhone = (rawPhone) => {
+    const digits = rawPhone.replace(/\D/g, '');
+    // Accept 10-digit (IN), or E.164 with country code (7-15 digits)
+    if (digits.length >= 7 && digits.length <= 15) {
+      // Trim to last 10 digits for Cashfree compatibility
+      return digits.length > 10 ? digits.slice(-10) : digits.padStart(10, '0');
+    }
+    return null;
+  };
+
   const handleSubmitPatientInfo = () => {
     const { fullName, email, phone, age, gender, medicalHistory, medications } = patientForm;
     if (!fullName.trim()) return alert('Please enter your Full Name.');
-    if (!email.trim()) return alert('Please enter your Email Address.');
-    if (!phone.trim()) return alert('Please enter your Phone Number.');
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      return alert('Please enter a valid Email Address.');
+    }
+    const sanitizedPhone = validateAndSanitizePhone(phone);
+    if (!phone.trim() || !sanitizedPhone) {
+      return alert('Please enter a valid Phone Number (7–15 digits, e.g. +91 7878865467 or 7878865467).');
+    }
     if (!age.trim()) return alert('Please enter your Age.');
     if (!medicalHistory.trim() || medicalHistory.trim().length < 10) {
       return alert('Please describe your Medical History & Current Symptoms (minimum 10 characters).');
     }
     const cleanHistory = medicalHistory.replace(/\|/g, ' ');
     const cleanMeds = (medications || '').replace(/\|/g, ' ');
-    handleSendMessage(null, `[Patient Info: ${fullName}|${email}|${phone}|${age}|${gender}|${cleanHistory}|${cleanMeds}]`);
+    handleSendMessage(null, `[Patient Info: ${fullName}|${email}|${sanitizedPhone}|${age}|${gender}|${cleanHistory}|${cleanMeds}]`);
   };
 
   const handleConfirmPayment = () => {
@@ -193,6 +209,46 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
   const handleCashfreeCheckout = async (amount, currency) => {
     setCashfreeLoading(true);
     try {
+      const sanitizedPhone = validateAndSanitizePhone(patientForm.phone || '9999999999') || '9999999999';
+      const bookingPayload = {
+        clinicId: clinicSettings?.clinicId,
+        amount: amount || 399,
+        currency: currency || 'INR',
+        sessionId,
+        patientInfo: {
+          name: patientForm.fullName || user?.name || 'NephroConsult Patient',
+          email: patientForm.email || user?.email || 'patient@nephroconsult.com',
+          phone: sanitizedPhone
+        }
+      };
+
+      // Fix 1: Detect if running inside cross-origin iframe
+      // Cashfree SDK cannot open a checkout modal inside a sandboxed cross-origin iframe.
+      // If inside iframe, send postMessage to parent window to open Cashfree on top-level domain.
+      const isInsideIframe = (() => {
+        try { return window.self !== window.top; } catch (e) { return true; }
+      })();
+
+      if (isInsideIframe) {
+        // Collect all stored documents from localStorage for the booking
+        let storedDocs = [];
+        try {
+          const stored = localStorage.getItem('cashfree_booking_details');
+          if (stored) storedDocs = JSON.parse(stored)?.documents || [];
+        } catch (_) {}
+
+        window.parent.postMessage({
+          type: 'INITIATE_CASHFREE_PAYMENT',
+          bookingDetails: {
+            ...bookingPayload,
+            documents: storedDocs
+          }
+        }, '*');
+        setCashfreeLoading(false);
+        return;
+      }
+
+      // Standalone portal: load Cashfree SDK and open checkout directly
       if (!window.Cashfree) {
         const script = document.createElement('script');
         script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
@@ -204,23 +260,26 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
         });
       }
 
-      const res = await API.post('/payments/cashfree/create-order', {
-        clinicId: clinicSettings?.clinicId,
-        amount: amount || 399,
-        currency: currency || 'INR',
-        sessionId,
-        patientInfo: {
-          name: patientForm.fullName || user?.name || 'NephroConsult Patient',
-          email: patientForm.email || user?.email || 'patient@nephroconsult.com',
-          phone: patientForm.phone || '9999999999'
-        }
-      });
+      const res = await API.post('/payments/cashfree/create-order', bookingPayload);
 
       if (res.data?.success && res.data?.paymentSessionId && window.Cashfree) {
+        // Persist booking details for PaymentSuccess.tsx verification pipeline
+        try {
+          const detailsForVerification = {
+            consultationType: bookingPayload.clinicId,
+            amount: bookingPayload.amount,
+            currency: bookingPayload.currency,
+            patientInfo: bookingPayload.patientInfo,
+            orderId: res.data.orderId,
+            paymentSessionId: res.data.paymentSessionId,
+            cashfreeAppId: res.data.cashfreeAppId
+          };
+          sessionStorage.setItem('cashfree_payment_details', JSON.stringify(detailsForVerification));
+        } catch (_) {}
+
         const mode = res.data.mode === 'production' ? 'production' : 'sandbox';
         const cashfree = new window.Cashfree({ mode });
-        
-        // Launch official Cashfree Payment Gateway Checkout SDK Overlay!
+
         await cashfree.checkout({
           paymentSessionId: res.data.paymentSessionId,
           redirectTarget: '_modal'
@@ -231,8 +290,8 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
       }
     } catch (err) {
       console.error('Cashfree Checkout Error:', err);
-      const errMsg = err.response?.data?.message || 'Failed to initiate Cashfree payment session. Please check your App ID & Secret Key in Dashboard Payment Settings.';
-      alert(`⚠️ Cashfree Payment Notice: ${errMsg}`);
+      const errMsg = err.response?.data?.message || 'Failed to initiate Cashfree payment session. Check your App ID & Secret Key in Dashboard Settings.';
+      alert(`⚠️ Cashfree Payment Error: ${errMsg}`);
     } finally {
       setCashfreeLoading(false);
     }
@@ -243,6 +302,27 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
     if (!file) return;
 
     setUploadingDoc(true);
+
+    // Fix 3: Convert file to Base64 and store in localStorage for MongoDB hand-off
+    const storeBase64Document = (file) => new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const base64 = reader.result.split(',')[1];
+          const docEntry = { filename: file.name, base64, mimeType: file.type };
+          const existing = JSON.parse(localStorage.getItem('cashfree_booking_details') || '{}');
+          existing.documents = [...(existing.documents || []), docEntry];
+          localStorage.setItem('cashfree_booking_details', JSON.stringify(existing));
+        } catch (_) {}
+        resolve();
+      };
+      reader.onerror = () => resolve();
+      reader.readAsDataURL(file);
+    });
+
+    // Run Base64 storage in parallel with server analysis
+    await storeBase64Document(file);
+
     const fd = new FormData();
     fd.append('file', file);
     fd.append('clinicId', clinicSettings.clinicId);

@@ -42,7 +42,9 @@ router.post('/cashfree/create-order', async (req, res) => {
         customer_phone: cleanPhone
       },
       order_meta: {
-        return_url: `http://localhost:3000/ai-doctor?order_id={order_id}`
+        // Fix 4: Redirect back to NephroConsult /payment/success to trigger full pipeline:
+        // MongoDB Appointment creation, Google Meet link, Nodemailer email receipt, Telegram notification.
+        return_url: `${process.env.NEPHROCONSULT_ORIGIN || 'https://nephroconsult.com'}/payment/success?order_id={order_id}`
       }
     };
 
