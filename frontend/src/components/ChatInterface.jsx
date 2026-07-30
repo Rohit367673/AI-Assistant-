@@ -49,6 +49,13 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
     medications: ''
   });
 
+  // Track booking context (plan, date, slot) so they can be forwarded to NephroConsult backend
+  const [bookingContext, setBookingContext] = useState({
+    consultationType: '',
+    date: '',
+    time: ''
+  });
+
   const messagesEndRef = useRef(null);
   const synthRef = useRef(window.speechSynthesis);
   const utteranceRef = useRef(null);
@@ -161,14 +168,17 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
 
   // Stepper Interaction Actions
   const handleSelectPlan = (planName) => {
+    setBookingContext(prev => ({ ...prev, consultationType: planName }));
     handleSendMessage(null, `[Selected Plan: ${planName}]`);
   };
 
   const handleSelectDate = (dateString) => {
+    setBookingContext(prev => ({ ...prev, date: dateString }));
     handleSendMessage(null, `[Selected Date: ${dateString}]`);
   };
 
   const handleSelectSlot = (slotString) => {
+    setBookingContext(prev => ({ ...prev, time: slotString }));
     handleSendMessage(null, `[Selected Slot: ${slotString}]`);
   };
 
@@ -237,10 +247,19 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
           if (stored) storedDocs = JSON.parse(stored)?.documents || [];
         } catch (_) {}
 
+        // Provide safe fallbacks for required NephroConsult backend fields
+        const today = new Date();
+        const fallbackDate = today.toISOString().split('T')[0];
+        const fallbackTime = '18:00';
+        const fallbackConsultType = bookingContext.consultationType || clinicSettings?.consultationTypes?.[0]?.name || 'General Consultation';
+
         window.parent.postMessage({
           type: 'INITIATE_CASHFREE_PAYMENT',
           bookingDetails: {
             ...bookingPayload,
+            consultationType: fallbackConsultType,
+            date: bookingContext.date || fallbackDate,
+            time: bookingContext.time || fallbackTime,
             documents: storedDocs
           }
         }, '*');
