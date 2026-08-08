@@ -6,10 +6,48 @@ import {
 } from 'lucide-react';
 import API from '../utils/api';
 
-// Format markdown to HTML
+// Helper function to strip raw JSON or markdown code blocks from AI replies
+export const cleanAIReplyText = (text) => {
+  if (!text) return '';
+  let str = String(text).trim();
+
+  // Strip markdown ```json ... ``` code blocks
+  if (str.startsWith('```')) {
+    str = str.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+  }
+
+  // Parse stringified JSON if object contains "reply"
+  if (str.startsWith('{') || str.includes('"reply":')) {
+    try {
+      const parsed = JSON.parse(str);
+      if (parsed && typeof parsed.reply === 'string') {
+        str = parsed.reply;
+      }
+    } catch (e) {
+      // Regex extraction fallback
+      const match = str.match(/"reply"\s*:\s*"((?:[^"\\]|\\.)*)"/s);
+      if (match && match[1]) {
+        str = match[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\r/g, '');
+      }
+    }
+  }
+
+  // Double check nested JSON
+  if (str.trim().startsWith('{') && str.trim().includes('"reply":')) {
+    try {
+      const p2 = JSON.parse(str.trim());
+      if (p2 && typeof p2.reply === 'string') str = p2.reply;
+    } catch (e) {}
+  }
+
+  return str.trim();
+};
+
+// Format markdown to HTML (always cleaning JSON syntax first)
 const formatMarkdown = (text) => {
   if (!text) return '';
-  let formatted = text
+  const clean = cleanAIReplyText(text);
+  let formatted = clean
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
     .replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded bg-white/10 text-pink-300 font-mono text-xs">$1</code>')
@@ -30,6 +68,7 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [recognition, setRecognition] = useState(null);
+  const [availableVoices, setAvailableVoices] = useState([]);
   
   // File upload & Cashfree modal state
   const [uploadingDoc, setUploadingDoc] = useState(false);
@@ -67,6 +106,20 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
     }
   }, [initialMessages]);
 
+  // Load available speech synthesis voices asynchronously
+  useEffect(() => {
+    const updateVoices = () => {
+      if (synthRef.current) {
+        const v = synthRef.current.getVoices();
+        if (v && v.length > 0) setAvailableVoices(v);
+      }
+    };
+    updateVoices();
+    if (synthRef.current) {
+      synthRef.current.onvoiceschanged = updateVoices;
+    }
+  }, []);
+
   // Initialize Session & Web Speech API
   useEffect(() => {
     let sId = sessionStorage.getItem('clinic_session_id');
@@ -75,52 +128,157 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
       sessionStorage.setItem('clinic_session_id', sId);
     }
     setSessionId(sId);
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const rec = new SpeechRecognition();
-      rec.continuous = false;
-      rec.interimResults = false;
-      rec.lang = 'en-US';
-
-      rec.onstart = () => setIsListening(true);
-      rec.onend = () => setIsListening(false);
-      rec.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        setInputValue(transcript);
-        handleSendMessage(null, transcript);
-      };
-
-      setRecognition(rec);
-    }
   }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
+  // Select realistic human male doctor voice ("Adam" or high-quality natural male voice)
+  const getBestMaleVoice = () => {
+    if (!synthRef.current) return null;
+    const voices = availableVoices.length > 0 ? availableVoices : synthRef.current.getVoices();
+    if (!voices || voices.length === 0) return null;
+
+    // 1. Check for requested "Adam" voice (macOS/iOS Adam or custom Adam)
+    const adamVoice = voices.find(v => v.name.toLowerCase().includes('adam'));
+    if (adamVoice) return adamVoice;
+
+    // 2. High-quality natural male voices (Microsoft Natural, Google UK/US Male, Apple Male)
+    const preferredMaleNames = [
+      'microsoft ryan online',
+      'microsoft guy online',
+      'microsoft andrew online',
+      'google uk english male',
+      'google us english male',
+      'daniel',
+      'alex',
+      'arthur',
+      'aaron',
+      'oliver',
+      'george',
+      'brian',
+      'male'
+    ];
+
+    for (const name of preferredMaleNames) {
+      const match = voices.find(v => v.lang.startsWith('en') && v.name.toLowerCase().includes(name));
+      if (match) return match;
+    }
+
+    // 3. Any English voice containing "male" or "natural"
+    const maleVoice = voices.find(v => 
+      v.lang.startsWith('en') && (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('natural'))
+    );
+    if (maleVoice) return maleVoice;
+
+    // 4. Fallback English voice
+    const englishVoice = voices.find(v => v.lang.startsWith('en'));
+    return englishVoice || voices[0];
+  };
+
   const speakText = (text) => {
-    if (isMuted || !synthRef.current) return;
+    if (isMuted || !synthRef.current || !text) return;
     synthRef.current.cancel();
 
-    const cleanText = text.replace(/\*\*/g, '').replace(/\*/g, '').replace(/`/g, '');
-    const utterance = new SpeechSynthesisUtterance(cleanText);
+    const plainText = cleanAIReplyText(text);
+
+    // Strip markdown formatting and symbols for spoken output
+    const cleanForSpeech = plainText
+      .replace(/```[\s\S]*?```/g, '')
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
+      .replace(/\[.*?\]/g, '')
+      .replace(/https?:\/\/\S+/g, '')
+      .replace(/[\n\r]+/g, ' ')
+      .trim();
+
+    if (!cleanForSpeech) return;
+
+    const utterance = new SpeechSynthesisUtterance(cleanForSpeech);
+    const chosenVoice = getBestMaleVoice();
+    if (chosenVoice) {
+      utterance.voice = chosenVoice;
+    }
+
+    // Warm, realistic human male doctor tone (pitch 0.95, rate 0.98)
+    utterance.pitch = 0.95;
+    utterance.rate = 0.98;
+    utterance.volume = 1.0;
     utteranceRef.current = utterance;
-    
+
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
+    utterance.onerror = (e) => {
+      console.warn('Speech synthesis error:', e);
+      setIsSpeaking(false);
+    };
 
     synthRef.current.speak(utterance);
   };
 
   const toggleListening = () => {
-    if (!recognition) return alert('Speech recognition is not supported in this browser.');
-    if (isListening) recognition.stop();
-    else {
-      if (synthRef.current) synthRef.current.cancel();
-      setIsSpeaking(false);
-      recognition.start();
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      return alert('Speech recognition is not supported in this browser. Please use Google Chrome, Microsoft Edge, or Safari.');
+    }
+
+    if (isListening) {
+      if (recognition) {
+        try { recognition.stop(); } catch (e) {}
+      }
+      setIsListening(false);
+      return;
+    }
+
+    // Stop TTS if doctor is currently speaking
+    if (synthRef.current) synthRef.current.cancel();
+    setIsSpeaking(false);
+
+    try {
+      const rec = new SpeechRecognition();
+      rec.continuous = false;
+      rec.interimResults = true;
+      rec.lang = 'en-US';
+
+      rec.onstart = () => setIsListening(true);
+      rec.onend = () => setIsListening(false);
+      
+      rec.onerror = (event) => {
+        console.warn('Speech recognition error:', event.error);
+        setIsListening(false);
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          alert('Microphone access denied. Please click the mic/lock icon in your browser address bar and choose Allow.');
+        }
+      };
+
+      rec.onresult = (event) => {
+        let interimText = '';
+        let finalText = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalText += event.results[i][0].transcript;
+          } else {
+            interimText += event.results[i][0].transcript;
+          }
+        }
+        const textToSet = finalText || interimText;
+        if (textToSet) {
+          setInputValue(textToSet);
+        }
+        if (finalText.trim()) {
+          handleSendMessage(null, finalText.trim());
+        }
+      };
+
+      setRecognition(rec);
+      rec.start();
+      setIsListening(true);
+    } catch (err) {
+      console.error('Failed to start speech recognition:', err);
+      setIsListening(false);
     }
   };
 
@@ -148,13 +306,14 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
       setIsTyping(false);
       if (response.data.success) {
         const { reply, action } = response.data;
+        const cleanReply = cleanAIReplyText(reply);
         setMessages(prev => [...prev, { 
           role: 'model', 
-          content: reply, 
+          content: cleanReply, 
           action: action, 
           timestamp: new Date() 
         }]);
-        speakText(reply);
+        speakText(cleanReply);
       }
     } catch (error) {
       setIsTyping(false);
@@ -392,13 +551,15 @@ export default function ChatInterface({ clinicSettings, user, initialMessages, i
   ];
 
   // Retrieve last bot message for speech bubble — truncated caption only
-  const lastBotMsg = [...messages].reverse().find(m => m.role === 'model')?.content || clinicSettings.welcomeMessage || '';
+  const lastBotMsgRaw = [...messages].reverse().find(m => m.role === 'model')?.content || clinicSettings.welcomeMessage || '';
+  const lastBotMsg = cleanAIReplyText(lastBotMsgRaw);
   
   // Extract first sentence or max 120 chars for the speech bubble caption
   const getBubbleCaption = (text) => {
     if (!text) return 'Hello! How can I help you today?';
+    const plain = cleanAIReplyText(text);
     // Strip markdown formatting
-    const clean = text.replace(/\*\*/g, '').replace(/\*/g, '').replace(/`/g, '').replace(/<[^>]*>/g, '');
+    const clean = plain.replace(/\*\*/g, '').replace(/\*/g, '').replace(/`/g, '').replace(/<[^>]*>/g, '');
     // Get first sentence
     const firstSentence = clean.split(/[.!?]\s/)[0];
     if (firstSentence && firstSentence.length <= 120) return firstSentence + (clean.length > firstSentence.length ? '.' : '');

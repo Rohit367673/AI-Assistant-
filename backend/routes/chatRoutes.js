@@ -454,14 +454,24 @@ router.post('/', async (req, res) => {
       const systemPrompt = clinic.promptConfig + `\n` + doctorContext;
       const replyText = await aiService.generateResponse(conversation.messages, systemPrompt, kbContent);
 
-      finalReply = replyText;
+      let cleanText = (replyText || '').trim();
+      if (cleanText.startsWith('```')) {
+        cleanText = cleanText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+      }
+
+      finalReply = cleanText;
       finalAction = null;
 
       try {
-        if (replyText.trim().startsWith('{')) {
-          const parsed = JSON.parse(replyText);
-          finalReply = parsed.reply || replyText;
+        if (cleanText.startsWith('{') && cleanText.endsWith('}')) {
+          const parsed = JSON.parse(cleanText);
+          finalReply = parsed.reply || cleanText;
           finalAction = parsed.action || null;
+        } else {
+          const matchReply = cleanText.match(/"reply"\s*:\s*"((?:[^"\\]|\\.)*)"/s);
+          if (matchReply && matchReply[1]) {
+            finalReply = matchReply[1].replace(/\\"/g, '"').replace(/\\n/g, '\n');
+          }
         }
       } catch (e) {
         // Safe fallback
